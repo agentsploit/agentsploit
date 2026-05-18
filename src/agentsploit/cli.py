@@ -5,9 +5,12 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import typer
+
+if TYPE_CHECKING:
+    from agentsploit.modules.mapper.models import Path as MapperPath
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -44,10 +47,15 @@ map_app = typer.Typer(
     help="Build and query the cross-server permission graph.",
     no_args_is_help=True,
 )
+verify_app = typer.Typer(
+    help="Verify a mapper-inferred path by driving it through a live agent.",
+    no_args_is_help=True,
+)
 app.add_typer(scan_app, name="scan")
 app.add_typer(generate_app, name="generate")
 app.add_typer(run_app, name="run")
 app.add_typer(map_app, name="map")
+app.add_typer(verify_app, name="verify")
 
 console = Console()
 err_console = Console(stderr=True)
@@ -560,6 +568,121 @@ def map_export(
     else:
         out.write_text(rendered)
         console.print(f"Wrote {fmt} graph to [bold]{out}[/bold]")
+
+
+# --------------------------------------------------------------------------- verify
+
+
+def _resolve_path_in_graph(graph_file: Path, from_tool: str, to_tool: str) -> MapperPath:
+    """Load a persisted graph and return the shortest path between two tool names."""
+    import json as _json
+
+    from agentsploit.modules.mapper.models import Graph
+    from agentsploit.modules.mapper.paths import shortest_path
+
+    raw = _json.loads(graph_file.read_text())
+    graph = Graph.model_validate(raw)
+
+    matches_src = [n for n in graph.nodes.values() if n.name == from_tool]
+    matches_dst = [n for n in graph.nodes.values() if n.name == to_tool]
+
+    if not matches_src:
+        raise typer.BadParameter(f"No tool named {from_tool!r} in the graph")
+    if not matches_dst:
+        raise typer.BadParameter(f"No tool named {to_tool!r} in the graph")
+
+    # If a tool name exists on multiple servers, the first match wins. This
+    # is fine for v0.5; we'll add explicit server-qualified IDs in v0.6.
+    src = matches_src[0]
+    dst = matches_dst[0]
+    path = shortest_path(graph, src.id, dst.id)
+    if path is None:
+        raise typer.BadParameter(f"No inferred path from {from_tool!r} to {to_tool!r} in the graph")
+    return path
+
+
+@verify_app.command("path")
+def verify_path(
+    graph_file: Annotated[
+        Path,
+        typer.Option(
+            "--graph",
+            "-g",
+            help="Path to a permission_graph.json produced by `map build`",
+        ),
+    ],
+    from_tool: Annotated[
+        str, typer.Option("--from", help="Source tool name on the path (e.g. read_file)")
+    ],
+    to_tool: Annotated[
+        str, typer.Option("--to", help="Sink tool name on the path (e.g. run_shell)")
+    ],
+    agent_config: Annotated[
+        Path | None,
+        typer.Option(
+            "--agent",
+            "-a",
+            help="Agent YAML config (optional — defaults to a mock agent)",
+        ),
+    ] = None,
+    auth: Annotated[Path | None, typer.Option("--auth", help="Authorization YAML")] = None,
+    training: Annotated[
+        bool, typer.Option("--training", help="Use restricted training-mode auth")
+    ] = False,
+    sink_arg: Annotated[
+        str | None,
+        typer.Option(
+            "--sink-arg",
+            help="Sink argument name to land the canary in (default: auto-chosen)",
+        ),
+    ] = None,
+    out_format: Annotated[str, typer.Option("--format", "-f", help="rich|json|sarif")] = "rich",
+    out_path: Annotated[
+        Path | None, typer.Option("--out", "-o", help="Output file (required for json/sarif)")
+    ] = None,
+) -> None:
+    """Verify a mapper-inferred path by driving it through a live agent."""
+    from agentsploit.modules.runner.config import RunnerConfig
+    from agentsploit.modules.verifier.verifier import PathVerifier
+
+    path = _resolve_path_in_graph(graph_file, from_tool, to_tool)
+
+    # If the operator supplied an agent config, use it to set provider/model.
+    # Otherwise the verifier defaults to the mock agent — full self-test loop
+    # with no API keys.
+    base_config: RunnerConfig | None = None
+    if agent_config is not None:
+        try:
+            base_config = RunnerConfig.load(agent_config)
+        except Exception as e:
+            raise typer.BadParameter(f"Failed to load agent config: {e}") from e
+        target_uri = base_config.target_uri()
+    else:
+        target_uri = "agent+mock://mock-1"
+
+    authorization = _load_auth(auth, training, target_uri)
+    target_obj = Target.parse(target_uri)
+    reporter = _resolve_reporter(out_format, out_path)
+
+    verifier = PathVerifier(path=path, base_config=base_config, sink_arg_name=sink_arg)
+    session = Session(authorization=authorization)
+
+    async def _run() -> None:
+        async for finding in verifier.run(target_obj, session):
+            session.add(finding)
+
+    try:
+        asyncio.run(_run())
+    except Exception as e:
+        err_console.print(f"[red]Verification failed:[/red] {e}")
+        raise typer.Exit(code=1) from e
+
+    manifest = session.persist()
+    reporter.emit(session)
+    console.print(f"\nSession manifest: [dim]{manifest}[/dim]")
+
+    confirmed = any("path-confirmed" in f.tags for f in session.findings)
+    raise typer.Exit(code=1 if confirmed else 0)
 
 
 if __name__ == "__main__":

@@ -97,7 +97,26 @@ agentsploit map export --graph ./engagements/<id>/<sid>/permission_graph.json -f
 | `MUTATION` (`git_push`, `delete_*`) | HIGH |
 | `EGRESS` (`send_email`, `webhook`) | HIGH |
 
-A path finding is a *testable hypothesis* — pair it with the v0.3 runner to verify exploitability end-to-end. See [docs/mapper.md](docs/mapper.md).
+A path finding is a *testable hypothesis* — pair it with the v0.5 verifier to confirm exploitability end-to-end. See [docs/mapper.md](docs/mapper.md).
+
+### 5. Path Verifier (v0.5)
+
+Closes the loop on the mapper. Take any mapper-inferred path, drive a path-targeted payload through a real or mock agent, and prove whether the chain actually completes.
+
+```bash
+agentsploit verify path \
+  --graph ./engagements/<id>/<sid>/permission_graph.json \
+  --from read_file --to send_email \
+  --training         # or --agent ./agent-anthropic.yaml --auth ./auth.yaml
+```
+
+| Outcome | Meaning | Severity |
+|---|---|---|
+| `CONFIRMED` | Sink tool was called with the canary in its arguments | Tied to sink privilege (EXEC → CRITICAL) |
+| `PARTIAL` | Sink reached or canary surfaced elsewhere, but chain incomplete | HIGH |
+| `FAILED` | No canary surface anywhere | INFO |
+
+A CONFIRMED finding moves a mapper hypothesis from "plausible attack path" to "proven exploit." See [docs/verifier.md](docs/verifier.md).
 
 ## Install
 

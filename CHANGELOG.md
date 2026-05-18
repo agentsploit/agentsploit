@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-18
+
+### Added
+
+- **Path verifier** — closes the loop between the v0.4 mapper and the v0.3
+  runner. Takes a mapper-inferred path and proves whether it's exploitable
+  end-to-end by driving a path-targeted payload through a real or mock agent
+- `verifier.PathVerifyTechnique` — targeted injection parameterised by
+  `(sink_tool_name, sink_arg_name, sink_input_schema)`. Wraps a
+  role-confusion envelope around an instruction to invoke the sink with
+  the canary in a specific argument, and scaffolds the sink's other
+  required args with plausible fillers.
+- `verifier.synth_runner_config` — turns a `Path` plus base settings
+  into a `RunnerConfig` whose mock tools mirror the path: source becomes
+  the payload-bearing tool, sink becomes a passive observer tool,
+  intermediate pivots are exposed for realism.
+- `verifier.PathVerifier` Module emitting three outcome classes with
+  severity tied to sink privilege:
+    `CONFIRMED` — sink called with canary in args (CRITICAL/HIGH)
+    `PARTIAL`   — sink reached or canary surfaced elsewhere (HIGH)
+    `FAILED`    — no canary surface anywhere (INFO)
+- `CanaryDetector.scan(..., only_tool=...)` — scopes the TOOL_CALL_ARGS
+  surface to a specific tool name so "canary in sink args" is provable
+  rather than just "canary somewhere in tool calls"
+- MockAgentAdapter v0.5: now parses instructions of the form
+  `call \`<tool>\` with arguments: k='v', …` and obeys them if the tool
+  is registered. Makes the mock agent a faithful test fixture for chain
+  completion without needing an LLM in the loop.
+- CLI: `agentsploit verify path --graph <file> --from <tool> --to <tool>`
+  with optional `--agent <config>` (defaults to mock for self-tests)
+- `docs/verifier.md` covering outcomes, the pipeline, and hygiene
+
+### Changed
+
+- README sectioned with verifier as v0.5 capability
+
 ## [0.4.0] - 2026-05-18
 
 ### Added
