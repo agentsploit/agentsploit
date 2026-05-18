@@ -1,0 +1,141 @@
+[project]
+name = "agentsploit"
+version = "0.1.0"
+description = "Offensive security framework for AI agents and MCP servers"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "AgentSploit Contributors" },
+]
+keywords = ["security", "offensive-security", "ai-security", "mcp", "agent-security", "red-team", "prompt-injection"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+]
+dependencies = [
+    "typer>=0.15.0",
+    "rich>=13.9.0",
+    "pydantic>=2.10.0",
+    "httpx>=0.28.0",
+    "mcp>=1.2.0",
+    "structlog>=24.4.0",
+    "anyio>=4.7.0",
+    "pyyaml>=6.0.2",
+    "reportlab>=4.2.5",
+    "jinja2>=3.1.4",
+    "ics>=0.7.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "types-pyyaml>=6.0.12",
+]
+
+[project.scripts]
+agentsploit = "agentsploit.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/agentsploit/agentsploit"
+Documentation = "https://github.com/agentsploit/agentsploit/tree/main/docs"
+Repository = "https://github.com/agentsploit/agentsploit"
+Issues = "https://github.com/agentsploit/agentsploit/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agentsploit"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "RUF", # ruff-specific
+    "S",   # flake8-bandit (security)
+    "N",   # pep8-naming
+]
+ignore = [
+    "S101",  # assert used (fine in tests)
+    "S603",  # subprocess call (we need it)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S", "N802", "E501", "RUF001", "RUF002", "RUF003"]
+"tests/fixtures/**/*.py" = ["S", "RUF001", "RUF002", "RUF003"]
+"src/agentsploit/modules/injection/**/*.py" = ["S", "E501", "RUF001", "RUF002", "RUF003"]
+"src/agentsploit/modules/mcp/checks/tool_shadowing.py" = ["RUF001", "RUF002", "RUF003"]
+"src/agentsploit/cli.py" = ["B006", "E501"]
+"src/agentsploit/modules/mcp/checks/prompt_disclosure.py" = ["E501"]
+"src/agentsploit/modules/mcp/checks/tool_poisoning.py" = ["E501"]
+"src/agentsploit/modules/mcp/scanner.py" = ["E501"]
+"src/agentsploit/modules/mcp/client.py" = ["S110"]
+"docs/**/*" = ["ALL"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["reportlab.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+markers = [
+    "unit: unit tests (fast, isolated)",
+    "integration: integration tests (require fixture servers)",
+]
+
+[tool.coverage.run]
+source = ["src/agentsploit"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
