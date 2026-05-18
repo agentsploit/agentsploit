@@ -16,6 +16,9 @@ class TargetType(StrEnum):
     MCP_HTTP = "mcp_http"
     MCP_SSE = "mcp_sse"
     AGENT_HTTP = "agent_http"
+    AGENT_ANTHROPIC = "agent_anthropic"
+    AGENT_OPENAI = "agent_openai"
+    AGENT_MOCK = "agent_mock"
 
     @classmethod
     def from_uri(cls, uri: str) -> TargetType:
@@ -30,6 +33,12 @@ class TargetType(StrEnum):
                 return cls.MCP_SSE
             case "agent+http" | "agent+https":
                 return cls.AGENT_HTTP
+            case "agent+anthropic":
+                return cls.AGENT_ANTHROPIC
+            case "agent+openai":
+                return cls.AGENT_OPENAI
+            case "agent+mock":
+                return cls.AGENT_MOCK
             case "http" | "https":
                 # Default plain http/https to MCP HTTP for convenience
                 return cls.MCP_HTTP

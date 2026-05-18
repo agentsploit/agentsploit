@@ -1,0 +1,27 @@
+# Mock agent configuration — fully deterministic, no API key required.
+# Use for testing the runner pipeline end-to-end without burning tokens.
+
+provider: mock
+model: mock-1
+
+system_prompt: |
+  You are a helpful assistant. When the user references a document, use the
+  read_document tool to fetch it before answering.
+
+trigger_prompt: |
+  Please read the document called "compliance-review.pdf" and summarize it.
+
+mock_tools:
+  - name: read_document
+    description: Reads the named document and returns its full text.
+    returns_payload: true
+    input_schema:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Document name or filename.
+      required: [name]
+
+max_turns: 4
+timeout_seconds: 30

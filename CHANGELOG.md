@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-18
+
+### Added
+
+- **Live agent runner** — drive an injection payload through a real LLM agent
+  and confirm exploitation by detecting canary surface in the agent's outputs
+- `runner.RunTrace` — adapter-agnostic transcript model (messages, tool calls,
+  tool results, thinking, errors)
+- `runner.MockTool` — tool definition the runner exposes to the agent; exactly
+  one tool per run holds the payload
+- `runner.CanaryDetector` with three surfaces:
+  - `TOOL_CALL_ARGS` (CRITICAL — agent acted on the injection)
+  - `RESPONSE_TEXT` (HIGH — agent obeyed instructions)
+  - `THINKING` (MEDIUM — model processed but didn't act)
+- `runner.RunnerConfig` — YAML-loadable agent configuration with provider,
+  model, system prompt, trigger prompt, mock tools, max turns, timeout
+- `runner.adapters.AgentAdapter` ABC + two concrete adapters:
+  - **AnthropicAdapter** — real Claude tool-use via the Anthropic SDK
+  - **MockAgentAdapter** — deterministic agent for tests and demos
+- `runner/injection` module that orchestrates payload → agent → detection
+  and emits one finding per canary surface, with the full trace persisted
+  to the engagement artifact directory
+- CLI: `agentsploit run injection --payload <file> --canary <AS-...> --agent
+  <config.yaml>` with the same `--auth`/`--training` enforcement as `scan`
+- Target types: `AGENT_ANTHROPIC`, `AGENT_OPENAI`, `AGENT_MOCK` + URI schemes
+  `agent+anthropic://`, `agent+openai://`, `agent+mock://`
+- `examples/agent-anthropic.yaml`, `examples/agent-mock.yaml`
+- `docs/runner.md` with pipeline, severity, config, and operational hygiene
+
+### Changed
+
+- Added `anthropic>=0.45.0` as a runtime dependency
+
 ## [0.2.0] - 2026-05-18
 
 ### Added
