@@ -40,9 +40,14 @@ run_app = typer.Typer(
     help="Drive a payload through a live agent and confirm exploitation.",
     no_args_is_help=True,
 )
+map_app = typer.Typer(
+    help="Build and query the cross-server permission graph.",
+    no_args_is_help=True,
+)
 app.add_typer(scan_app, name="scan")
 app.add_typer(generate_app, name="generate")
 app.add_typer(run_app, name="run")
+app.add_typer(map_app, name="map")
 
 console = Console()
 err_console = Console(stderr=True)
@@ -398,6 +403,163 @@ def run_injection(
 
     confirmed = any("confirmed-injection" in f.tags for f in session.findings)
     raise typer.Exit(code=1 if confirmed else 0)
+
+
+# --------------------------------------------------------------------------- map
+
+
+def _load_map_targets(path: Path) -> list[str]:
+    import yaml
+
+    data = yaml.safe_load(path.read_bytes())
+    if not isinstance(data, dict) or "targets" not in data:
+        raise typer.BadParameter(f"{path}: expected a YAML doc with a top-level `targets:` list")
+    targets = data["targets"]
+    if not isinstance(targets, list) or not targets:
+        raise typer.BadParameter(f"{path}: `targets` must be a non-empty list")
+    return [str(t) for t in targets]
+
+
+@map_app.command("build")
+def map_build(
+    targets: Annotated[
+        Path,
+        typer.Option(
+            "--targets",
+            "-t",
+            help="YAML file with a `targets:` list of MCP URIs to enumerate",
+        ),
+    ],
+    auth: Annotated[Path | None, typer.Option("--auth", help="Authorization YAML")] = None,
+    training: Annotated[
+        bool, typer.Option("--training", help="Use restricted training-mode auth")
+    ] = False,
+    auth_bearer_env: Annotated[
+        str | None,
+        typer.Option(
+            "--auth-bearer-env",
+            help="Env var name for bearer token applied to every target (HTTP/SSE)",
+        ),
+    ] = None,
+    header: Annotated[
+        list[str] | None, typer.Option("--header", "-H", help="HTTP header (repeatable)")
+    ] = None,
+    insecure: Annotated[bool, typer.Option("--insecure")] = False,
+    timeout: Annotated[float, typer.Option("--timeout")] = 30.0,
+    max_length: Annotated[int, typer.Option("--max-length", help="Max path length in hops")] = 4,
+    min_privilege: Annotated[
+        str,
+        typer.Option(
+            "--min-privilege",
+            help="Lowest sink privilege to report: read|internal_action|egress|mutation|execution",
+        ),
+    ] = "egress",
+    out_format: Annotated[str, typer.Option("--format", "-f", help="rich|json|sarif")] = "rich",
+    out_path: Annotated[
+        Path | None, typer.Option("--out", "-o", help="Output file (required for json/sarif)")
+    ] = None,
+) -> None:
+    """Enumerate every target, classify tools, infer edges, report risky paths."""
+    from agentsploit.modules.mapper.mapper import PermissionMapper
+    from agentsploit.modules.mapper.models import Privilege
+    from agentsploit.modules.mcp.auth import Credentials
+
+    target_uris = _load_map_targets(targets)
+
+    # The "authorization target" for the map operation is a synthetic URI
+    # listing the targets. We require every one of them to be in scope.
+    authorization = _load_auth(auth, training, target_uris[0])
+    for uri in target_uris[1:]:
+        try:
+            authorization.check(uri)
+        except Exception as e:
+            err_console.print(
+                Panel(str(e), title="[red]Authorization denied[/red]", border_style="red")
+            )
+            raise typer.Exit(code=2) from e
+
+    try:
+        priv = Privilege[min_privilege.upper()]
+    except KeyError as e:
+        raise typer.BadParameter(
+            f"Unknown privilege {min_privilege!r}. Use one of: {[p.label for p in Privilege]}"
+        ) from e
+
+    try:
+        credentials = Credentials.from_cli(
+            headers=header,
+            bearer_env=auth_bearer_env,
+            insecure=insecure,
+            timeout=timeout,
+        )
+    except ValueError as e:
+        raise typer.BadParameter(str(e)) from e
+
+    reporter = _resolve_reporter(out_format, out_path)
+    mapper = PermissionMapper(
+        target_uris=target_uris,
+        credentials=credentials,
+        max_path_length=max_length,
+        min_sink_privilege=priv,
+    )
+    session = Session(authorization=authorization)
+    target_obj = Target.parse(target_uris[0])
+
+    async def _run() -> None:
+        async for finding in mapper.run(target_obj, session):
+            session.add(finding)
+
+    try:
+        asyncio.run(_run())
+    except Exception as e:
+        err_console.print(f"[red]Map build failed:[/red] {e}")
+        raise typer.Exit(code=1) from e
+
+    manifest = session.persist()
+    reporter.emit(session)
+    console.print(f"\nSession manifest: [dim]{manifest}[/dim]")
+
+    risky = any(f.severity >= 2 and "path" in f.tags for f in session.findings)
+    raise typer.Exit(code=1 if risky else 0)
+
+
+@map_app.command("export")
+def map_export(
+    graph_file: Annotated[
+        Path,
+        typer.Option(
+            "--graph", "-g", help="Path to a permission_graph.json produced by `map build`"
+        ),
+    ],
+    fmt: Annotated[str, typer.Option("--format", "-f", help="dot|mermaid|json")] = "mermaid",
+    out: Annotated[
+        Path | None, typer.Option("--out", "-o", help="Write to file (default stdout)")
+    ] = None,
+) -> None:
+    """Export a built graph to graphviz DOT, Mermaid, or JSON."""
+    import json as _json
+
+    from agentsploit.modules.mapper.exporter import to_dot, to_json, to_mermaid
+    from agentsploit.modules.mapper.models import Graph
+
+    raw = _json.loads(graph_file.read_text())
+    graph = Graph.model_validate(raw)
+
+    match fmt:
+        case "dot":
+            rendered = to_dot(graph)
+        case "mermaid":
+            rendered = to_mermaid(graph)
+        case "json":
+            rendered = to_json(graph)
+        case _:
+            raise typer.BadParameter(f"Unknown format {fmt!r}. Use dot|mermaid|json.")
+
+    if out is None:
+        console.print(rendered)
+    else:
+        out.write_text(rendered)
+        console.print(f"Wrote {fmt} graph to [bold]{out}[/bold]")
 
 
 if __name__ == "__main__":

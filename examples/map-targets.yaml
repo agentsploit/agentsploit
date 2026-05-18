@@ -1,0 +1,12 @@
+# Map-targets config — list of MCP URIs to enumerate and graph together.
+#
+# Use with: agentsploit map build --targets ./map-targets.yaml --auth ./authorization.yaml
+#
+# Authentication for HTTP/SSE targets uses the same --header / --auth-bearer-env
+# flags as `scan mcp`; one credential set applies to every target in the run.
+
+targets:
+  - "stdio://./tests/fixtures/vulnerable_mcp/server.py"
+  - "stdio://./tests/fixtures/vulnerable_sink_mcp/server.py"
+  # Example HTTP target (commented out — uncomment + set creds to use):
+  # - "https://mcp.staging.example.com/mcp"

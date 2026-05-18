@@ -1,6 +1,6 @@
 [project]
 name = "agentsploit"
-version = "0.3.0"
+version = "0.4.0"
 description = "Offensive security framework for AI agents and MCP servers"
 readme = "README.md"
 requires-python = ">=3.11"

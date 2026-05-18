@@ -115,7 +115,12 @@ class TrainingAuth(Authorization):
             scope_notes="Training mode: bundled fixture and localhost targets only.",
             targets=[
                 "stdio://*tests/fixtures/vulnerable_mcp*",
+                "stdio://*tests/fixtures/vulnerable_sink_mcp*",
+                "stdio://*tests/fixtures/vulnerable_http_mcp*",
                 "stdio://*vulnerable_mcp*",
+                "stdio://*vulnerable_sink_mcp*",
+                "stdio://*vulnerable_http_mcp*",
+                "agent+mock://*",
                 "http://localhost*",
                 "http://127.0.0.1*",
                 "mcp+http://localhost*",

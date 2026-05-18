@@ -82,6 +82,23 @@ Takes a generated payload + an agent config and drives the payload through a rea
 
 **Adapters in v0.3:** `anthropic` (real Claude tool-use), `mock` (deterministic, for tests). OpenAI + generic HTTP land in v0.4. See [docs/runner.md](docs/runner.md).
 
+### 4. Permission Graph Mapper (v0.4)
+
+Enumerates tools across multiple MCP servers, classifies each by privilege (source / pivot / sink), infers data-flow edges, and finds attack paths from low-trust sources to high-impact sinks. BloodHound for tool chains.
+
+```bash
+agentsploit map build --targets ./examples/map-targets.yaml --auth ./auth.yaml
+agentsploit map export --graph ./engagements/<id>/<sid>/permission_graph.json -f mermaid -o graph.md
+```
+
+| Sink privilege | Severity |
+|---|---|
+| `EXECUTION` (`run_command`, `eval`) | CRITICAL |
+| `MUTATION` (`git_push`, `delete_*`) | HIGH |
+| `EGRESS` (`send_email`, `webhook`) | HIGH |
+
+A path finding is a *testable hypothesis* — pair it with the v0.3 runner to verify exploitability end-to-end. See [docs/mapper.md](docs/mapper.md).
+
 ## Install
 
 Requires Python 3.11+.

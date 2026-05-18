@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-18
+
+### Added
+
+- **Permission graph mapper** — BloodHound-style cross-server attack-path
+  discovery for agent tool chains
+- `mapper.Graph`, `Node`, `Edge`, `Path` pydantic models with stable IDs
+  (`<server-uri>::<tool-name>`)
+- `mapper.Classification` (source/pivot/sink/unknown) and `mapper.Privilege`
+  (READ → INTERNAL_ACTION → EGRESS → MUTATION → EXECUTION)
+- Heuristic classifier: name prefixes, sink-keyword sets, dangerous arg
+  names (`command`, `to`, `shell`, …), description phrase matching
+- Edge inference combining three signals:
+    1. destination input-arg name appears in source description (strongest)
+    2. shared pivot tokens between descriptions (`url`, `path`, `body`, …)
+    3. source → sink baseline (weakest)
+- Pathfinder: simple-path DFS up to `max_length` with `min_privilege` filter,
+  Dijkstra-based shortest-path between named tools
+- Exporters: JSON (lossless), GraphViz DOT, Mermaid (renders in GitHub MD)
+- `mapper/permission_graph` Module emitting one INFO `mapper/built` finding
+  plus one path finding per discovered route, with severity tied to sink
+  privilege (EXECUTION → CRITICAL, MUTATION/EGRESS → HIGH)
+- CLI: `agentsploit map build --targets ./targets.yaml` and
+  `agentsploit map export --graph <file> --format mermaid|dot|json`
+- Second vulnerable MCP fixture (`vulnerable_sink_mcp`) with sink-class
+  tools (`send_email`, `git_push`, `run_shell`, `cache_summary`) that pairs
+  with the existing source fixture to produce known cross-server paths
+- `docs/mapper.md` and `examples/map-targets.yaml`
+
+### Changed
+
+- README sectioned with mapper as v0.4 capability
+
 ## [0.3.0] - 2026-05-18
 
 ### Added
