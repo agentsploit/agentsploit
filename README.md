@@ -26,7 +26,9 @@ This release ships two MVP capabilities:
 
 ### 1. MCP Server Scanner
 
-Connects to an MCP server (stdio or HTTP) and runs a battery of checks against its tools, resources, and prompts:
+Connects to an MCP server over **stdio**, **Streamable HTTP**, or **SSE** and runs a battery of checks against its tools, resources, prompts, and (for HTTP/SSE) its HTTP surface.
+
+**Inventory checks (all transports):**
 
 | Check | What it finds |
 |---|---|
@@ -34,6 +36,15 @@ Connects to an MCP server (stdio or HTTP) and runs a battery of checks against i
 | `tool_shadowing` | Name collisions / shadowing with well-known tools (e.g. `read_file`, `send_email`) |
 | `prompt_disclosure` | Tools whose descriptions leak internal system prompts, secrets, or paths |
 | `unsafe_tool_args` | Tool schemas that accept dangerous unconstrained arguments (paths, URLs, shell commands) |
+
+**HTTP probes (HTTP/SSE only):**
+
+| Probe | What it finds |
+|---|---|
+| `http_tls_required` | Non-loopback MCP served over plain HTTP |
+| `http_info_disclosure` | Version-leaking Server / X-Powered-By / X-Runtime headers |
+| `http_cors` | Wildcard origin, origin reflection, or the wildcard-with-credentials spec violation |
+| `http_auth_bypass` | When `--auth-bearer*` is supplied: server accepts the same calls without credentials |
 
 ### 2. Indirect Prompt Injection Payload Generator
 
@@ -80,8 +91,14 @@ pip install agentsploit
 # 1. Create an authorization file for your engagement
 agentsploit init-auth --target "stdio://./my-mcp-server" --authorized-by "Jane Doe <ciso@example.com>"
 
-# 2. Scan an MCP server
+# 2. Scan a local stdio MCP server
 agentsploit scan mcp stdio://./my-mcp-server --auth ./authorization.yaml
+
+# 2b. Scan a hosted MCP server over HTTPS with a bearer token from env
+export MCP_TOKEN=$(op read 'op://eng/mcp-staging/token')
+agentsploit scan mcp https://mcp.staging.example.com/mcp \
+  --auth-bearer-env MCP_TOKEN \
+  --auth ./authorization.yaml
 
 # 3. Generate an indirect prompt injection payload
 agentsploit generate injection \

@@ -1,4 +1,4 @@
-"""Thin async MCP client wrapper for stdio and HTTP transports."""
+"""Async MCP client wrapper supporting stdio, HTTP (Streamable), and SSE transports."""
 
 from __future__ import annotations
 
@@ -9,10 +9,14 @@ from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import urlparse
 
+import httpx
 from mcp import ClientSession, StdioServerParameters
+from mcp.client.sse import sse_client
 from mcp.client.stdio import stdio_client
+from mcp.client.streamable_http import streamable_http_client
 
 from agentsploit.core.target import Target, TargetType
+from agentsploit.modules.mcp.auth import Credentials
 
 
 @dataclass
@@ -29,6 +33,30 @@ class MCPClientError(RuntimeError):
     """Raised when the underlying MCP transport fails to connect or speak."""
 
 
+# --------------------------------------------------------------------- URI helpers
+
+
+def http_url_from_target(target: Target) -> str:
+    """Strip the `mcp+` / `sse://` prefixes; return a plain http(s)://… URL.
+
+    Public so HTTP-only checks (CORS, headers, auth-bypass) can probe the
+    underlying URL with raw httpx without going through MCP.
+    """
+    uri = target.uri
+    if uri.startswith("mcp+http://"):
+        return "http://" + uri[len("mcp+http://") :]
+    if uri.startswith("mcp+https://"):
+        return "https://" + uri[len("mcp+https://") :]
+    if uri.startswith("mcp+sse://"):
+        return "http://" + uri[len("mcp+sse://") :]
+    if uri.startswith("sse://"):
+        return "http://" + uri[len("sse://") :]
+    return uri
+
+
+# --------------------------------------------------------------------- transports
+
+
 @asynccontextmanager
 async def _stdio_session(target: Target) -> AsyncIterator[ClientSession]:
     """Open an MCP session over stdio.
@@ -42,7 +70,6 @@ async def _stdio_session(target: Target) -> AsyncIterator[ClientSession]:
     if not parts:
         raise MCPClientError(f"Empty stdio command in URI: {target.uri!r}")
 
-    # If the command looks like a python file, run it under python
     if parts[0].endswith(".py") or "/" in parts[0]:
         command = "python"
         args = parts
@@ -59,37 +86,83 @@ async def _stdio_session(target: Target) -> AsyncIterator[ClientSession]:
 
 
 @asynccontextmanager
-async def _http_session(target: Target) -> AsyncIterator[ClientSession]:
-    """Placeholder for HTTP MCP transport.
+async def _http_session(target: Target, credentials: Credentials) -> AsyncIterator[ClientSession]:
+    """Open an MCP session over Streamable HTTP.
 
-    The official MCP Python SDK is iterating on HTTP transports — until that
-    API stabilizes in this project, HTTP scans fall back to a raw probe in
-    checks that need it.
+    URI format:
+        http://host:port[/path]
+        https://host:port[/path]
+        mcp+http://host:port[/path]
+        mcp+https://host:port[/path]
     """
-    raise MCPClientError(
-        "HTTP MCP transport will land in v0.2. Use stdio:// for now, or pipe through `mcp-bridge`."
+    url = http_url_from_target(target)
+    http_client = httpx.AsyncClient(
+        headers=credentials.merged_headers(),
+        timeout=credentials.timeout_seconds,
+        verify=credentials.verify_tls,
     )
-    yield  # pragma: no cover
+    try:
+        async with streamable_http_client(url=url, http_client=http_client) as (
+            read,
+            write,
+            _get_session_id,
+        ):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                yield session
+    finally:
+        await http_client.aclose()
 
 
 @asynccontextmanager
-async def open_session(target: Target) -> AsyncIterator[ClientSession]:
+async def _sse_session(target: Target, credentials: Credentials) -> AsyncIterator[ClientSession]:
+    """Open an MCP session over Server-Sent Events.
+
+    URI format:
+        sse://host:port/path
+        mcp+sse://host:port/path
+    """
+    url = http_url_from_target(target)
+    async with sse_client(
+        url=url,
+        headers=credentials.merged_headers(),
+        timeout=credentials.timeout_seconds,
+    ) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            yield session
+
+
+@asynccontextmanager
+async def open_session(
+    target: Target, credentials: Credentials | None = None
+) -> AsyncIterator[ClientSession]:
+    """Open an MCP session for any supported transport."""
+    creds = credentials or Credentials()
+
     if target.type == TargetType.MCP_STDIO:
         async with _stdio_session(target) as s:
             yield s
         return
-    if target.type in (TargetType.MCP_HTTP, TargetType.MCP_SSE):
-        async with _http_session(target) as s:
+    if target.type == TargetType.MCP_HTTP:
+        async with _http_session(target, creds) as s:
+            yield s
+        return
+    if target.type == TargetType.MCP_SSE:
+        async with _sse_session(target, creds) as s:
             yield s
         return
     raise MCPClientError(f"Unsupported target type for MCP: {target.type}")
 
 
-async def inventory(target: Target) -> MCPInventory:
+# --------------------------------------------------------------------- inventory
+
+
+async def inventory(target: Target, credentials: Credentials | None = None) -> MCPInventory:
     """Connect to the target and enumerate tools, resources, prompts."""
     inv = MCPInventory()
     try:
-        async with open_session(target) as session:
+        async with open_session(target, credentials) as session:
             try:
                 tools_resp = await session.list_tools()
                 inv.tools = [t.model_dump() for t in tools_resp.tools]

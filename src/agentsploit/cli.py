@@ -192,6 +192,32 @@ def scan_mcp(
         list[str] | None,
         typer.Option("--check", help="Run only these checks (repeatable). Default: all."),
     ] = None,
+    header: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--header",
+            "-H",
+            help="HTTP header to send (repeatable), e.g. -H 'X-Tenant: acme'",
+        ),
+    ] = None,
+    auth_bearer: Annotated[
+        str | None,
+        typer.Option(
+            "--auth-bearer",
+            help="Bearer token sent as Authorization: Bearer <token>",
+        ),
+    ] = None,
+    auth_bearer_env: Annotated[
+        str | None,
+        typer.Option(
+            "--auth-bearer-env",
+            help="Read bearer token from this environment variable (preferred over --auth-bearer)",
+        ),
+    ] = None,
+    insecure: Annotated[
+        bool, typer.Option("--insecure", help="Skip TLS certificate verification")
+    ] = False,
+    timeout: Annotated[float, typer.Option("--timeout", help="HTTP timeout in seconds")] = 30.0,
     out_format: Annotated[str, typer.Option("--format", "-f", help="rich|json|sarif")] = "rich",
     out_path: Annotated[
         Path | None, typer.Option("--out", "-o", help="Output file (required for json/sarif)")
@@ -202,10 +228,22 @@ def scan_mcp(
     target_obj = Target.parse(target)
     reporter = _resolve_reporter(out_format, out_path)
 
+    from agentsploit.modules.mcp.auth import Credentials
     from agentsploit.modules.mcp.scanner import MCPScanner
 
+    try:
+        credentials = Credentials.from_cli(
+            headers=header,
+            bearer_token=auth_bearer,
+            bearer_env=auth_bearer_env,
+            insecure=insecure,
+            timeout=timeout,
+        )
+    except ValueError as e:
+        raise typer.BadParameter(str(e)) from e
+
     registry.get("mcp/scanner")  # ensure module is loaded and registered
-    scanner = MCPScanner(check_filter=checks)
+    scanner = MCPScanner(check_filter=checks, credentials=credentials)
     session = Session(authorization=authorization)
 
     async def _run() -> None:
