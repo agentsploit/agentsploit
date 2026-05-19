@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-05-19
+
+### Added
+
+- **Live engagement dashboard.** The web UI is no longer read-only:
+  - Bearer-token auth (`agentsploit serve` prints the token on startup
+    and persists it at `~/.config/agentsploit/web-token`). `--no-auth`
+    is available for dev but refuses to bind off-loopback.
+  - Server-Sent Events stream at `GET /api/events` carrying
+    `job.queued`, `job.started`, `job.finding`, `job.finished`,
+    `job.failed`, `job.cancelled` event types. The UI subscribes and
+    updates findings tables / session counts in real time.
+  - In-process job manager (`agentsploit.web.jobs`) wraps scans and
+    verifies as asyncio tasks with bounded concurrency. Findings stream
+    into a real `Session` whose `add()` is wrapped to fan out events.
+- **Write endpoints.** `POST /api/jobs/scan`, `POST /api/jobs/verify`,
+  `POST /api/jobs/{id}/cancel`. Requests are scope-checked against the
+  active engagement authorization before queueing; out-of-scope targets
+  return 403.
+- **Path explorer.** Mapper now writes `paths.json` next to
+  `permission_graph.json`. `GET /api/sessions/{id}/paths` exposes the
+  list and a new "Paths" tab in the session detail view renders a
+  filterable, severity-sorted table with a one-click "Verify" button per
+  row.
+- **Frontend:** new `/login` page; new `/jobs` page (live jobs + Run
+  Scan form); SSE-driven live status indicator in the header; React
+  Query cache invalidation on relevant events so findings appear without
+  manual refresh.
+- `agentsploit serve --auth <file>` / `--training` / `--no-auth` flags.
+
+### Changed
+
+- The web UI now requires a bearer token by default. Pre-existing
+  scripts hitting `/api/*` will start receiving 401 unless updated to
+  send `Authorization: Bearer <token>`. (Migration: read the token from
+  `~/.config/agentsploit/web-token` after first `agentsploit serve`.)
+- `agentsploit.web.server.build_app()` gains keyword arguments
+  `authorization`, `auth_enabled`, `token`. Tests that called
+  `build_app(dir)` continue to work; production callers should now
+  thread auth through.
+
 ## [1.5.0] - 2026-05-19
 
 ### Added

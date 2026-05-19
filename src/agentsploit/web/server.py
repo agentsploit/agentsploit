@@ -1,9 +1,8 @@
 """FastAPI app construction + uvicorn entry point for `agentsploit serve`.
 
-The server is read-only for v1.5. Defaults to binding 127.0.0.1; binding to
-any other host prints a loud warning because the UI exposes engagement
-artifacts (canary traces, finding evidence) that may contain sensitive
-content.
+v1.6 introduces auth (bearer token, see web/auth.py), write endpoints
+(see api.submit_scan_job / submit_verify_job), and an in-process job
+runner. The server is still localhost-only by default.
 """
 
 from __future__ import annotations
@@ -17,12 +16,31 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+from agentsploit.core import Authorization
+from agentsploit.utils.logging import get_logger
 from agentsploit.version import __version__
-from agentsploit.web import api
+from agentsploit.web import api, auth
+
+log = get_logger(__name__)
 
 
-def build_app(engagement_dir: Path) -> FastAPI:
-    api.configure(engagement_dir)
+def build_app(
+    engagement_dir: Path,
+    *,
+    authorization: Authorization | None = None,
+    auth_enabled: bool = True,
+    token: str | None = None,
+) -> FastAPI:
+    """Construct the FastAPI app.
+
+    `authorization` gates the write endpoints (scan/verify); it's optional
+    so a UI started in read-only mode still works against existing
+    engagements.
+
+    `auth_enabled=False` disables the bearer-token check entirely (dev mode).
+    """
+    api.configure(engagement_dir, authorization=authorization)
+    auth.configure(token=token, enabled=auth_enabled)
 
     app = FastAPI(
         title="AgentSploit",
@@ -74,26 +92,43 @@ def serve(
     host: str = "127.0.0.1",
     port: int = 8800,
     engagement_dir: Path | None = None,
+    authorization: Authorization | None = None,
+    auth_enabled: bool = True,
+    token: str | None = None,
     reload: bool = False,
 ) -> None:
     """Start the web UI server.
 
-    Binds to localhost-only by default. Warns loudly on non-localhost binds
-    because the UI surfaces engagement artifacts that may contain sensitive
-    content (canary traces, finding evidence, tool-call args).
+    Bind safety
+    -----------
+    Defaults to localhost. Binding off-loopback is refused outright if
+    auth is disabled (`auth_enabled=False`), because engagement artifacts
+    may contain canaries / tool args / finding evidence. With auth on,
+    a non-loopback bind only prints a warning - the operator presumably
+    knows what they're doing.
     """
-    if host not in ("127.0.0.1", "localhost", "::1"):
+    is_loopback = host in ("127.0.0.1", "localhost", "::1")
+    if not is_loopback:
+        if not auth_enabled:
+            raise RuntimeError(
+                f"Refusing to bind to {host!r} with --no-auth. "
+                f"The UI surfaces engagement artifacts and write endpoints "
+                f"that would be exposed without authentication."
+            )
         warnings.warn(
             f"Binding the AgentSploit web UI to {host!r}. The UI exposes "
-            f"engagement artifacts (traces, finding evidence) without "
-            f"authentication. Authentication will land in v1.6. Until "
-            f"then, only bind to non-loopback hosts inside an "
-            f"already-trust-bounded network.",
+            f"engagement artifacts and write endpoints. Make sure you're "
+            f"inside an already-trust-bounded network.",
             stacklevel=2,
         )
 
     engagement_dir = engagement_dir or Path.cwd() / "engagements"
-    app = build_app(engagement_dir)
+    app = build_app(
+        engagement_dir,
+        authorization=authorization,
+        auth_enabled=auth_enabled,
+        token=token,
+    )
     uvicorn.run(app, host=host, port=port, log_level="info")
 
 

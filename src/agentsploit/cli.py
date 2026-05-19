@@ -144,14 +144,56 @@ def serve(
             help="Directory to scan for sessions. Defaults to ./engagements.",
         ),
     ] = None,
+    auth_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--auth",
+            help=(
+                "Authorization YAML. Required to run scans/verifies from "
+                "the UI. Without it the UI is read-only."
+            ),
+        ),
+    ] = None,
+    training: Annotated[
+        bool,
+        typer.Option(
+            "--training",
+            help=(
+                "Use restricted training-mode auth instead of an --auth "
+                "file. Allows running scans only against local/mock targets."
+            ),
+        ),
+    ] = False,
+    no_auth: Annotated[
+        bool,
+        typer.Option(
+            "--no-auth",
+            help=(
+                "Disable bearer-token auth. Localhost only; refuses to "
+                "bind off-loopback in this mode."
+            ),
+        ),
+    ] = False,
 ) -> None:
-    """Start the AgentSploit web UI for browsing engagement output.
+    """Start the AgentSploit web UI.
 
-    Serves a read-only view of sessions, findings, permission graphs, and
-    traces. Defaults to localhost-only because engagement artifacts may
-    contain sensitive content. Authentication lands in v1.6.
+    v1.6 adds write endpoints (POST scan/verify jobs) and a live SSE
+    event stream. Defaults to localhost-only + bearer-token auth.
     """
+    from agentsploit.web.auth import load_or_create_token
     from agentsploit.web.server import serve as _serve
+
+    if auth_path is not None and training:
+        raise typer.BadParameter("Use either --auth or --training, not both.")
+
+    authorization: Authorization | None = None
+    if training:
+        authorization = TrainingAuth()
+    elif auth_path is not None:
+        try:
+            authorization = Authorization.load(auth_path)
+        except FileNotFoundError as e:
+            raise typer.BadParameter(f"Auth file not found: {auth_path}") from e
 
     resolved = engagement_dir or Path.cwd() / "engagements"
     if not resolved.exists():
@@ -160,11 +202,44 @@ def serve(
             f"Hint: run `agentsploit init <dir>` to scaffold one, "
             f"or pass --engagement-dir <path>."
         )
+
+    token: str | None = None
+    if not no_auth:
+        token = load_or_create_token()
+        console.print(
+            Panel(
+                f"[bold]Web token:[/bold] {token}\n\n"
+                f"Send as [cyan]Authorization: Bearer <token>[/cyan] (or "
+                f"[cyan]?token=...[/cyan] for SSE). The token is persisted "
+                f"at [dim]~/.config/agentsploit/web-token[/dim] - same "
+                f"value on next start unless you delete that file.",
+                title="[green]auth[/green]",
+                border_style="green",
+            )
+        )
+    else:
+        err_console.print(
+            "[yellow]--no-auth: the server is wide-open on this port. "
+            "Use only on a trusted single-user host.[/yellow]"
+        )
+
+    if authorization is None:
+        err_console.print(
+            "[yellow]No --auth or --training: UI is read-only (no scan/verify jobs).[/yellow]"
+        )
+
     console.print(
         f"[green]Starting AgentSploit UI[/green] -> http://{host}:{port}  "
         f"(engagement_dir={resolved})"
     )
-    _serve(host=host, port=port, engagement_dir=resolved)
+    _serve(
+        host=host,
+        port=port,
+        engagement_dir=resolved,
+        authorization=authorization,
+        auth_enabled=not no_auth,
+        token=token,
+    )
 
 
 @app.command("list-modules")

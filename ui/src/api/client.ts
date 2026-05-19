@@ -58,8 +58,121 @@ export interface PermissionGraph {
   built_at: string;
 }
 
-async function getJson<T>(path: string): Promise<T> {
-  const resp = await fetch(path, { headers: { Accept: "application/json" } });
+export interface PathSummary {
+  id: string;
+  source_name: string;
+  source_server_uri: string;
+  sink_name: string;
+  sink_server_uri: string;
+  sink_privilege: number;
+  sink_privilege_label: string;
+  length: number;
+  total_weight: number;
+  severity_score: number;
+  render: string;
+}
+
+export type JobStatus =
+  | "queued"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "cancelled";
+
+export interface Job {
+  id: string;
+  kind: "scan" | "verify" | string;
+  label: string;
+  request: Record<string, unknown>;
+  status: JobStatus;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  session_id: string | null;
+  finding_count: number;
+  error: string | null;
+}
+
+export interface ScanRequest {
+  target_uri: string;
+  checks?: string[] | null;
+  headers?: string[] | null;
+  bearer_token?: string | null;
+  bearer_env?: string | null;
+  insecure?: boolean;
+  timeout?: number;
+}
+
+export interface VerifyRequest {
+  source_session_id: string;
+  path_id: string;
+  agent_config_path?: string | null;
+  sink_arg?: string | null;
+}
+
+export interface JobAccepted {
+  job_id: string;
+  status: JobStatus;
+  session_id: string;
+}
+
+// ----------------------------------------------------------- auth
+
+const TOKEN_KEY = "agentsploit.token";
+
+export const tokenStore = {
+  get: (): string | null => {
+    try {
+      return localStorage.getItem(TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  },
+  set: (t: string) => {
+    try {
+      localStorage.setItem(TOKEN_KEY, t);
+    } catch {
+      // ignore
+    }
+  },
+  clear: () => {
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+    } catch {
+      // ignore
+    }
+  },
+};
+
+class AuthError extends Error {
+  readonly status: number;
+  constructor(status: number, msg: string) {
+    super(msg);
+    this.status = status;
+  }
+}
+
+function authHeaders(): HeadersInit {
+  const t = tokenStore.get();
+  return t ? { Authorization: `Bearer ${t}` } : {};
+}
+
+async function request<T>(
+  path: string,
+  init?: RequestInit
+): Promise<T> {
+  const headers: HeadersInit = {
+    Accept: "application/json",
+    ...(init?.headers ?? {}),
+    ...authHeaders(),
+  };
+  if (init?.body && !(headers as Record<string, string>)["Content-Type"]) {
+    (headers as Record<string, string>)["Content-Type"] = "application/json";
+  }
+  const resp = await fetch(path, { ...init, headers });
+  if (resp.status === 401 || resp.status === 403) {
+    throw new AuthError(resp.status, `auth required (${resp.status})`);
+  }
   if (!resp.ok) {
     let detail = resp.statusText;
     try {
@@ -73,14 +186,54 @@ async function getJson<T>(path: string): Promise<T> {
   return resp.json() as Promise<T>;
 }
 
+export { AuthError };
+
 export const api = {
-  health: () => getJson<Health>("/api/health"),
-  sessions: () => getJson<SessionSummary[]>("/api/sessions"),
-  session: (id: string) => getJson<SessionSummary>(`/api/sessions/${id}`),
-  findings: (id: string) => getJson<Finding[]>(`/api/sessions/${id}/findings`),
-  graph: (id: string) => getJson<PermissionGraph>(`/api/sessions/${id}/graph`),
+  health: () => request<Health>("/api/health"),
+  sessions: () => request<SessionSummary[]>("/api/sessions"),
+  session: (id: string) => request<SessionSummary>(`/api/sessions/${id}`),
+  findings: (id: string) => request<Finding[]>(`/api/sessions/${id}/findings`),
+  graph: (id: string) => request<PermissionGraph>(`/api/sessions/${id}/graph`),
+  paths: (id: string) => request<PathSummary[]>(`/api/sessions/${id}/paths`),
   traces: (id: string) =>
-    getJson<{ traces: { filename: string; size_bytes: string; modified_at: string }[] }>(
+    request<{ traces: { filename: string; size_bytes: string; modified_at: string }[] }>(
       `/api/sessions/${id}/traces`
     ),
+  jobs: () => request<Job[]>("/api/jobs"),
+  job: (id: string) => request<Job>(`/api/jobs/${id}`),
+  submitScan: (body: ScanRequest) =>
+    request<JobAccepted>("/api/jobs/scan", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  submitVerify: (body: VerifyRequest) =>
+    request<JobAccepted>("/api/jobs/verify", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  cancelJob: (id: string) =>
+    request<{ job_id: string; status: string }>(`/api/jobs/${id}/cancel`, {
+      method: "POST",
+    }),
 };
+
+// SSE: the EventSource browser API can't set headers, so we pass the
+// token as a query param. The server accepts both.
+export function eventsUrl(): string {
+  const t = tokenStore.get();
+  return t ? `/api/events?token=${encodeURIComponent(t)}` : "/api/events";
+}
+
+export interface BrokerEvent {
+  type:
+    | "job.queued"
+    | "job.started"
+    | "job.finding"
+    | "job.finished"
+    | "job.failed"
+    | "job.cancelled";
+  timestamp: number;
+  job_id: string | null;
+  session_id: string | null;
+  payload: Record<string, unknown>;
+}

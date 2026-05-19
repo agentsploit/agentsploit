@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import AsyncIterator
+from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
 from agentsploit.core.finding import Evidence, Finding, Severity
 from agentsploit.core.module import Category, Module, ModuleMeta
 from agentsploit.core.target import TargetType
 from agentsploit.modules.mapper.builder import build_graph
+from agentsploit.modules.mapper.models import Path as MapperPath
 from agentsploit.modules.mapper.models import Privilege
 from agentsploit.modules.mapper.paths import find_all_paths
 from agentsploit.modules.mcp.auth import Credentials
@@ -17,6 +20,36 @@ from agentsploit.utils.logging import get_logger
 if TYPE_CHECKING:
     from agentsploit.core.session import Session
     from agentsploit.core.target import Target
+
+
+def _path_id(idx: int, path: MapperPath) -> str:
+    """Deterministic id for a path: <source-node-id>::<sink-node-id>::<idx>."""
+    return f"{path.source.id}=>{path.sink.id}#{idx}"
+
+
+def _write_paths_json(out_path: Path, paths: list[MapperPath]) -> None:
+    """Persist discovered paths so the web UI / `verify path-by-id` can read them."""
+    out_path.write_text(
+        json.dumps(
+            {
+                "paths": [
+                    {
+                        "id": _path_id(i, p),
+                        "source": p.source.model_dump(mode="json"),
+                        "sink": p.sink.model_dump(mode="json"),
+                        "nodes": [n.model_dump(mode="json") for n in p.nodes],
+                        "edges": [e.model_dump(mode="json") for e in p.edges],
+                        "length": p.length,
+                        "total_weight": p.total_weight,
+                        "severity_score": p.severity_score,
+                        "render": p.render(),
+                    }
+                    for i, p in enumerate(paths)
+                ]
+            },
+            indent=2,
+        )
+    )
 
 
 log = get_logger(__name__)
@@ -107,6 +140,11 @@ class PermissionMapper(Module):
             max_length=self.max_path_length,
             min_privilege=self.min_sink_privilege,
         )
+
+        # Persist paths in a stable indexed form so the web UI can
+        # display them and `verify path-by-id` can resolve them. v1.6+.
+        paths_path = session.artifact_dir / "paths.json"
+        _write_paths_json(paths_path, paths)
 
         log.info("mapper.paths", count=len(paths))
 

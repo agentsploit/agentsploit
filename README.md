@@ -227,16 +227,17 @@ agentsploit poison verify-thread \
 
 Realistic against OpenAI Assistants threads, customer-support chatbots with multi-message state, and multi-tenant chat platforms where users share session context. See [docs/poisoning.md#conversation-thread-poisoning-v14](docs/poisoning.md#conversation-thread-poisoning-v14).
 
-### 11. Web UI (v1.5)
+### 11. Live engagement dashboard (v1.5 + v1.6)
 
-A local web app for browsing engagement output (sessions, findings, permission graphs, traces) in the browser instead of grepping JSON. Read-only as of v1.5 — triggering scans/verifies from the UI lands with the live-engagement dashboard in v1.6.
+A local web app for browsing engagement output AND driving live scans / verifies from the browser. v1.5 shipped the read-only browser; v1.6 added bearer-token auth, write endpoints, a Server-Sent Events stream, a path explorer page, and live findings updates.
 
 ```bash
-agentsploit serve
+agentsploit serve --auth authorization.yaml
 # -> http://127.0.0.1:8800
+# Token printed on startup; paste it into the /login page.
 ```
 
-Cytoscape-rendered permission graphs, severity-filtered findings tables with per-finding evidence drilldowns, no extra processes to manage. Defaults to localhost-only because engagement artifacts may contain canaries, tool arguments, and finding evidence. See [docs/web-ui.md](docs/web-ui.md).
+Cytoscape-rendered permission graphs, severity-filtered findings tables with per-finding evidence drilldowns, a sortable attack-path explorer with one-click "Verify this path" buttons, and a Jobs page where findings stream in live as scans run. Defaults to localhost-only with auth required. See [docs/web-ui.md](docs/web-ui.md).
 
 ## Install
 

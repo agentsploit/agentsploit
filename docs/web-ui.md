@@ -1,30 +1,37 @@
 # Web UI
 
 `agentsploit serve` starts a local web server that lets you browse
-engagement output (sessions, findings, permission graphs, traces) in
-a browser instead of grepping JSON.
+engagement output (sessions, findings, permission graphs, traces, attack
+paths) AND drive new scans/verifies, all in a browser.
 
-The UI is **read-only as of v1.5**. Triggering scans/verifies from the
-UI lands with the live-engagement dashboard in v1.6.
+v1.5 shipped the read-only browser. v1.6 adds:
+
+- bearer-token auth
+- POST endpoints for triggering scans and verifies
+- a live SSE event stream that the UI subscribes to (so findings appear
+  in real time as a scan progresses)
+- a path explorer page backed by a new `paths.json` mapper artifact
 
 ## Quick start
 
 ```bash
-# 1. Run any scan/map/verify/poison command that writes to engagements/
+# 1. Scaffold an engagement (or use an existing one)
 agentsploit init my-engagement/
 cd my-engagement/
-agentsploit scan mcp-injection stdio://./vuln-mcp --auth auth.yaml
 
-# 2. Browse the results
-agentsploit serve
+# 2. Run scans from the CLI or from the UI
+agentsploit serve --auth authorization.yaml
 # -> http://127.0.0.1:8800
+# Token printed on startup. Paste into the /login page.
 ```
 
 ## Layout
 
 ```
-/                          -> Sessions table
-/sessions/<session-id>     -> Findings + Graph tabs
+/                          -> Sessions table (live-updating)
+/sessions/<session-id>     -> Findings, Graph, Paths tabs
+/jobs                      -> Background jobs + "Run scan" form
+/login                     -> Token entry
 ```
 
 ### Findings tab
@@ -42,19 +49,50 @@ agentsploit serve
 - Click a node to open a detail aside with classification reasons and
   the originating MCP server URI.
 
-## Bind safety
+## Auth
 
-The server defaults to `127.0.0.1:8800`. It refuses to silently bind to
-anything else: passing `--host 0.0.0.0` works but prints a loud warning
-because:
+`agentsploit serve` (v1.6+) requires a bearer token by default. On
+first start it mints a token, prints it to the console, and persists it
+at `~/.config/agentsploit/web-token` (chmod 600). Subsequent starts
+reuse the same value.
 
-- The UI surfaces engagement artifacts that may contain canaries, tool
-  call arguments, and finding evidence — i.e. raw data extracted from
-  attacker probes against real systems.
-- v1.5 has **no authentication**. If you bind off-localhost, do it
-  inside an already-trust-bounded network.
+Send it as:
 
-Authentication lands in v1.6.
+```
+Authorization: Bearer <token>
+```
+
+For the SSE endpoint (`/api/events`), the browser `EventSource` API
+cannot set headers; the server therefore also accepts `?token=<token>`
+in the query string.
+
+To disable auth entirely (single-operator local-only use):
+
+```bash
+agentsploit serve --no-auth
+```
+
+`--no-auth` refuses to bind to anything except loopback. Off-localhost
+binds *with* auth print a warning but proceed.
+
+## Triggering scans from the UI
+
+Two prerequisites:
+
+1. Start with an active authorization context. Either `--auth <file>`
+   or `--training`. Without one, the UI is read-only.
+2. The requested target must be in scope per that authorization.
+   Out-of-scope POSTs return 403.
+
+```bash
+agentsploit serve \
+    --engagement-dir engagements/ \
+    --auth engagements/authorization.yaml
+```
+
+Then in the UI: **Sessions -> Run scan -> enter target URI -> Submit**.
+Findings appear in the new session's detail page live as they're
+discovered.
 
 ## Engagement directory
 
@@ -105,6 +143,21 @@ The REST API is mounted under `/api`. OpenAPI docs at `/docs`.
 | `GET /api/sessions/{id}/graph` | Permission graph JSON verbatim |
 | `GET /api/sessions/{id}/traces` | Trace artefact listing |
 | `GET /api/sessions/{id}/traces/{filename}` | One trace JSON |
+| `GET /api/sessions/{id}/paths` | (v1.6) Attack paths from `paths.json` |
+| `POST /api/jobs/scan` | (v1.6) Queue an MCP scan job |
+| `POST /api/jobs/verify` | (v1.6) Queue a path-verify job |
+| `POST /api/jobs/{id}/cancel` | (v1.6) Cancel a running job |
+| `GET /api/jobs` | (v1.6) List jobs (newest first) |
+| `GET /api/jobs/{id}` | (v1.6) One job's status |
+| `GET /api/events` | (v1.6) SSE stream of broker events |
 
-All read-only. Write endpoints (trigger scan, trigger verify) land in
-v1.6.
+### SSE event types
+
+| Event | Payload | Notes |
+| --- | --- | --- |
+| `job.queued` | `{kind, label}` | Fires immediately on POST. |
+| `job.started` | `{kind, label}` | Runner picked up the job. |
+| `job.finding` | `{finding: ...}` | One finding per emit. |
+| `job.finished` | `{finding_count}` | Normal completion. |
+| `job.failed` | `{error}` | Exception during run. |
+| `job.cancelled` | `{}` | Operator cancelled. |

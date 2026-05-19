@@ -85,7 +85,7 @@ def engagement_root(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def client(engagement_root: Path) -> TestClient:
-    app = build_app(engagement_root)
+    app = build_app(engagement_root, auth_enabled=False)
     return TestClient(app)
 
 
@@ -173,7 +173,7 @@ def test_session_id_path_traversal_blocked(client: TestClient) -> None:
 
 
 def test_empty_engagement_root(tmp_path: Path) -> None:
-    app = build_app(tmp_path / "does-not-exist")
+    app = build_app(tmp_path / "does-not-exist", auth_enabled=False)
     c = TestClient(app)
     r = c.get("/api/sessions")
     assert r.status_code == 200

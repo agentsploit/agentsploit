@@ -1,12 +1,26 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { api } from "@/api/client";
+import { useSSE } from "@/hooks/useSSE";
 
 export default function SessionsList() {
+  const qc = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: ["sessions"],
     queryFn: api.sessions,
   });
+
+  // Live updates: when a job finishes, a new session likely showed up.
+  const { events } = useSSE();
+  useEffect(() => {
+    if (events.length === 0) return;
+    const last = events[events.length - 1];
+    if (last.type === "job.finished" || last.type === "job.finding") {
+      qc.invalidateQueries({ queryKey: ["sessions"] });
+    }
+  }, [events, qc]);
 
   if (isLoading) {
     return <div className="p-6 text-slate-500">Loading sessions...</div>;
@@ -37,7 +51,15 @@ agentsploit poison verify --sink-tool send_email --sink-arg body --sink-privileg
 
   return (
     <div className="p-6 max-w-5xl">
-      <h1 className="text-xl font-semibold mb-4">Sessions ({sessions.length})</h1>
+      <div className="flex items-baseline justify-between mb-4">
+        <h1 className="text-xl font-semibold">Sessions ({sessions.length})</h1>
+        <Link
+          to="/jobs"
+          className="text-sm bg-slate-900 text-white rounded px-3 py-1.5"
+        >
+          Run scan
+        </Link>
+      </div>
       <div className="bg-white rounded border overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-slate-100 text-slate-600">

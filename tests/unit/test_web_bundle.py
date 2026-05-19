@@ -28,7 +28,7 @@ def test_spa_serves_index_when_bundle_present(tmp_path: Path) -> None:
 
         pytest.skip("frontend bundle not built; run `cd ui && npm run build`")
 
-    app = build_app(tmp_path)
+    app = build_app(tmp_path, auth_enabled=False)
     c = TestClient(app)
     r = c.get("/")
     assert r.status_code == 200
@@ -41,7 +41,7 @@ def test_spa_serves_index_when_bundle_present(tmp_path: Path) -> None:
 
 def test_api_route_takes_priority_over_spa(tmp_path: Path) -> None:
     """The catch-all SPA route must not swallow /api/* requests."""
-    app = build_app(tmp_path)
+    app = build_app(tmp_path, auth_enabled=False)
     c = TestClient(app)
     r = c.get("/api/health")
     assert r.status_code == 200

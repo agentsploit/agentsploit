@@ -1,24 +1,47 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { api } from "@/api/client";
 import FindingsTable from "@/components/FindingsTable";
 import GraphView from "@/components/GraphView";
+import PathsTable from "@/components/PathsTable";
+import { useSSE } from "@/hooks/useSSE";
 
-type Tab = "findings" | "graph";
+type Tab = "findings" | "graph" | "paths";
 
 export default function SessionDetail() {
   const { sessionId = "" } = useParams<{ sessionId: string }>();
   const [tab, setTab] = useState<Tab>("findings");
+  const qc = useQueryClient();
 
   const { data: session } = useQuery({
     queryKey: ["session", sessionId],
     queryFn: () => api.session(sessionId),
   });
+  const { data: paths } = useQuery({
+    queryKey: ["paths", sessionId],
+    queryFn: () => api.paths(sessionId),
+  });
+
+  // Live updates: when an event lands for this session, invalidate the
+  // findings + summary queries so they re-fetch.
+  const { events } = useSSE();
+  useEffect(() => {
+    if (events.length === 0) return;
+    const last = events[events.length - 1];
+    if (last.session_id !== sessionId) return;
+    if (last.type === "job.finding" || last.type === "job.finished") {
+      qc.invalidateQueries({ queryKey: ["findings", sessionId] });
+      qc.invalidateQueries({ queryKey: ["session", sessionId] });
+    }
+  }, [events, sessionId, qc]);
 
   if (!session) {
     return <div className="p-6 text-slate-500">Loading session...</div>;
   }
+
+  const hasPaths = (paths?.length ?? 0) > 0;
 
   return (
     <div className="flex flex-col h-full">
@@ -45,11 +68,17 @@ export default function SessionDetail() {
               Permission graph
             </TabButton>
           )}
+          {hasPaths && (
+            <TabButton current={tab} target="paths" onClick={setTab}>
+              Paths ({paths?.length})
+            </TabButton>
+          )}
         </div>
       </div>
       <div className="flex-1 overflow-auto">
         {tab === "findings" && <FindingsTable sessionId={sessionId} />}
         {tab === "graph" && session.has_graph && <GraphView sessionId={sessionId} />}
+        {tab === "paths" && hasPaths && <PathsTable sessionId={sessionId} />}
       </div>
     </div>
   );
