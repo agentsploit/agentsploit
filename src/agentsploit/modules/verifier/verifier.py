@@ -18,7 +18,6 @@ from agentsploit.modules.runner.adapters import get_adapter
 from agentsploit.modules.runner.config import RunnerConfig
 from agentsploit.modules.runner.detector import CanaryDetector, CanarySurface
 from agentsploit.modules.verifier.synth_config import synth_runner_config
-from agentsploit.modules.verifier.techniques import PathVerifyTechnique
 from agentsploit.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -83,22 +82,43 @@ class PathVerifier(Module):
         *,
         sink_arg_name: str | None = None,
         canary: str | None = None,
+        technique: str = "role_confusion",
     ) -> None:
         self.path = path
         self.base_config = base_config
         self.sink_arg_name = sink_arg_name or _default_canary_arg(path)
         self.canary = canary or f"AS-{secrets.token_hex(6).upper()}"
+        self.technique_name = technique
 
     async def run(self, target: Target, session: Session) -> AsyncIterator[Finding]:
+        from agentsploit.modules.verifier.targeted_techniques import TARGETED_TECHNIQUES
+
         log.info(
             "verifier.start",
             source=self.path.source.name,
             sink=self.path.sink.name,
             canary=self.canary,
+            technique=self.technique_name,
         )
 
         # Build the targeted injection payload
-        technique = PathVerifyTechnique(
+        technique_cls = TARGETED_TECHNIQUES.get(self.technique_name)
+        if technique_cls is None:
+            yield Finding(
+                module=self.META.name,
+                check="verifier/bad_technique",
+                target=target.uri,
+                severity=Severity.INFO,
+                title=f"Unknown technique {self.technique_name!r}",
+                description=(
+                    f"Technique {self.technique_name!r} is not registered. "
+                    f"Available: {sorted(TARGETED_TECHNIQUES)}"
+                ),
+                remediation="Pass a known technique name to PathVerifier(...).",
+                tags=["verifier", "error"],
+            )
+            return
+        technique = technique_cls(
             sink_tool_name=self.path.sink.name,
             sink_arg_name=self.sink_arg_name,
             sink_input_schema=self.path.sink.input_schema,
@@ -269,6 +289,7 @@ class PathVerifier(Module):
                 artifact_path=str(trace_path),
                 extra={
                     "canary": self.canary,
+                    "technique": self.technique_name,
                     "source": source.id,
                     "sink": sink.id,
                     "sink_privilege": sink.privilege.label,
@@ -278,7 +299,7 @@ class PathVerifier(Module):
                 },
             ),
             references=self.META.references,
-            tags=tags,
+            tags=[*tags, f"technique:{self.technique_name}"],
         )
 
 

@@ -122,6 +122,55 @@ agentsploit verify path --graph ... --from <src> --to <sink> \
 
 The mock pass is essentially free; use it as a pre-filter before spending tokens on a real model.
 
+## Technique fuzzing (v0.7)
+
+The default verifier uses one targeted injection envelope: `role_confusion`. v0.7 adds four more — `direct`, `delimiter`, `unicode_tag`, `tool_smuggling` — and a fuzzer that tries them in sequence until one lands.
+
+```bash
+# Single-path fuzz — try every technique against one (source, sink) pair
+agentsploit verify fuzz-path \
+  --graph ./engagements/<id>/<sid>/permission_graph.json \
+  --from read_file \
+  --to send_email \
+  --training
+
+# Restrict to a specific technique set
+agentsploit verify fuzz-path \
+  --graph ... \
+  --from read_file --to send_email \
+  --techniques delimiter,unicode_tag,tool_smuggling \
+  --training
+
+# Disable early-stop to learn which techniques the agent resists
+agentsploit verify fuzz-path \
+  --graph ... \
+  --from read_file --to send_email \
+  --no-early-stop \
+  --agent ./agent-anthropic.yaml --auth ./auth.yaml
+
+# Batch fuzz — every path × every technique
+agentsploit verify all-paths \
+  --graph ... \
+  --fuzz \
+  --techniques role_confusion,delimiter,unicode_tag \
+  --parallel 3 \
+  --training
+```
+
+The summary finding (`verifier/fuzz_summary`) reports:
+
+- The **winning technique** (if any path was CONFIRMED)
+- Per-technique outcomes (CONFIRMED / PARTIAL / FAILED)
+- Total techniques tried before early-stop
+
+Why this matters: knowing *which* envelope landed tells defenders exactly what their injection-defence layer missed. A win on `unicode_tag` means the defence doesn't strip U+E0000 tag-block characters. A win on `tool_smuggling` means the agent runtime parses JSON tool-call syntax out of narrative text. Each is a different remediation.
+
+### Default technique order
+
+`DEFAULT_FUZZ_ORDER`: `role_confusion`, `delimiter`, `unicode_tag`, `tool_smuggling`, `direct`.
+
+Ordered roughly by historical effectiveness against modern models: role-confusion and delimiter are the strongest baselines; direct is intentionally last because it's the loudest and most likely to trip simple defences.
+
 ## What the verifier is not
 
 - **Not a fuzzer (yet).** Each verification tests one technique against one path. Technique fuzzing across paths is a future direction.

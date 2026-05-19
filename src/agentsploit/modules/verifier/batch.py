@@ -68,6 +68,8 @@ class BatchPathVerifier(Module):
         min_sink_privilege: Privilege = Privilege.EGRESS,
         max_paths: int | None = None,
         parallel: int = 2,
+        fuzz: bool = False,
+        fuzz_techniques: list[str] | None = None,
     ) -> None:
         self.graph = graph
         self.base_config = base_config
@@ -75,6 +77,8 @@ class BatchPathVerifier(Module):
         self.min_sink_privilege = min_sink_privilege
         self.max_paths = max_paths
         self.parallel = max(1, parallel)
+        self.fuzz = fuzz
+        self.fuzz_techniques = fuzz_techniques
 
     async def run(self, target: Target, session: Session) -> AsyncIterator[Finding]:
         all_paths = find_all_paths(
@@ -128,10 +132,19 @@ class BatchPathVerifier(Module):
 
         async def _run_one(path: Path) -> _PathResult:
             async with sem:
-                verifier = PathVerifier(path=path, base_config=self.base_config)
+                if self.fuzz:
+                    from agentsploit.modules.verifier.fuzzer import FuzzPathVerifier
+
+                    module: Module = FuzzPathVerifier(
+                        path=path,
+                        base_config=self.base_config,
+                        techniques=self.fuzz_techniques,
+                    )
+                else:
+                    module = PathVerifier(path=path, base_config=self.base_config)
                 findings: list[Finding] = []
                 try:
-                    async for f in verifier.run(target, session):
+                    async for f in module.run(target, session):
                         findings.append(f)
                 except Exception as e:
                     log.warning("batch_verify.path_failed", path=path.render(), error=str(e))

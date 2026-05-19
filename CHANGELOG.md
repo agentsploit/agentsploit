@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-18
+
+### Added
+
+- **Technique fuzzing across paths** — when one injection envelope fails,
+  automatically try the others until something lands
+- `verifier.targeted_techniques` catalog with 5 variants of the path-
+  targeted injection, each wrapping the same "call <sink> with <canary>
+  in <arg>" instruction in a different envelope:
+    `role_confusion`  — fake <system>/<assistant> turns (v0.5 default)
+    `direct`          — bare imperative
+    `delimiter`       — escape from a fenced content block
+    `unicode_tag`     — invisible U+E0000 tag-block smuggling
+    `tool_smuggling`  — embed plausible-looking tool_call JSON
+- `verifier.FuzzPathVerifier` Module that iterates techniques against a
+  single path, stops at first CONFIRMED (configurable), and emits a
+  summary finding showing the winning technique + per-technique outcomes
+- `verifier.PathVerifier(... technique="...")` — pick one of the 5
+  variants explicitly. Defaults to `role_confusion` for back-compat.
+- `verifier.BatchPathVerifier(fuzz=True, fuzz_techniques=[...])` — run
+  the fuzzer on every path in the graph
+- CLI:
+    * `agentsploit verify fuzz-path --from <s> --to <k>
+      [--techniques <list>] [--no-early-stop]`
+    * `agentsploit verify all-paths --fuzz [--techniques <list>]`
+- Every per-path finding now carries a `technique:<name>` tag and a
+  `technique` field in evidence — so triage tools can see which
+  envelope produced each finding
+- `docs/verifier.md` extended with the fuzzing workflow and the
+  defender-actionable interpretation of which technique wins
+- `verifier.techniques.PathVerifyTechnique` retained as a back-compat
+  alias for `RoleConfusionPathVerify`
+
 ## [0.6.0] - 2026-05-18
 
 ### Added

@@ -720,6 +720,20 @@ def verify_all_paths(
         typer.Option("--max-paths", help="Cap how many paths to verify (cost control)"),
     ] = None,
     parallel: Annotated[int, typer.Option("--parallel", "-p", help="Concurrent verifications")] = 2,
+    fuzz: Annotated[
+        bool,
+        typer.Option(
+            "--fuzz",
+            help="For each path, try multiple techniques and stop at first CONFIRMED",
+        ),
+    ] = False,
+    fuzz_techniques: Annotated[
+        str | None,
+        typer.Option(
+            "--techniques",
+            help="Comma-separated technique names for --fuzz (default: all)",
+        ),
+    ] = None,
     out_format: Annotated[str, typer.Option("--format", "-f", help="rich|json|sarif")] = "rich",
     out_path: Annotated[
         Path | None, typer.Option("--out", "-o", help="Output file (required for json/sarif)")
@@ -757,6 +771,10 @@ def verify_all_paths(
     target_obj = Target.parse(target_uri)
     reporter = _resolve_reporter(out_format, out_path)
 
+    technique_list: list[str] | None = None
+    if fuzz_techniques:
+        technique_list = [t.strip() for t in fuzz_techniques.split(",") if t.strip()]
+
     batch = BatchPathVerifier(
         graph=graph,
         base_config=base_config,
@@ -764,6 +782,8 @@ def verify_all_paths(
         min_sink_privilege=priv,
         max_paths=max_paths,
         parallel=parallel,
+        fuzz=fuzz,
+        fuzz_techniques=technique_list,
     )
     session = Session(authorization=authorization)
 
@@ -775,6 +795,100 @@ def verify_all_paths(
         asyncio.run(_run())
     except Exception as e:
         err_console.print(f"[red]Batch verification failed:[/red] {e}")
+        raise typer.Exit(code=1) from e
+
+    manifest = session.persist()
+    reporter.emit(session)
+    console.print(f"\nSession manifest: [dim]{manifest}[/dim]")
+
+    confirmed = any("path-confirmed" in f.tags for f in session.findings)
+    raise typer.Exit(code=1 if confirmed else 0)
+
+
+@verify_app.command("fuzz-path")
+def verify_fuzz_path(
+    graph_file: Annotated[
+        Path, typer.Option("--graph", "-g", help="Path to a permission_graph.json")
+    ],
+    from_tool: Annotated[str, typer.Option("--from", help="Source tool name on the path")],
+    to_tool: Annotated[str, typer.Option("--to", help="Sink tool name on the path")],
+    agent_config: Annotated[
+        Path | None,
+        typer.Option("--agent", "-a", help="Agent YAML config (defaults to mock agent)"),
+    ] = None,
+    auth: Annotated[Path | None, typer.Option("--auth", help="Authorization YAML")] = None,
+    training: Annotated[
+        bool, typer.Option("--training", help="Use restricted training-mode auth")
+    ] = False,
+    techniques: Annotated[
+        str | None,
+        typer.Option(
+            "--techniques",
+            help="Comma-separated technique names to try (default: all). "
+            "Options: role_confusion, direct, delimiter, unicode_tag, tool_smuggling",
+        ),
+    ] = None,
+    sink_arg: Annotated[
+        str | None,
+        typer.Option("--sink-arg", help="Sink argument to land canary in (default: auto)"),
+    ] = None,
+    no_early_stop: Annotated[
+        bool,
+        typer.Option(
+            "--no-early-stop",
+            help="Try every technique even after one CONFIRMS (default: stop on first)",
+        ),
+    ] = False,
+    out_format: Annotated[str, typer.Option("--format", "-f", help="rich|json|sarif")] = "rich",
+    out_path: Annotated[
+        Path | None, typer.Option("--out", "-o", help="Output file (required for json/sarif)")
+    ] = None,
+) -> None:
+    """Try multiple injection techniques against one path; stop at first CONFIRMED."""
+    from agentsploit.modules.runner.config import RunnerConfig
+    from agentsploit.modules.verifier.fuzzer import FuzzPathVerifier
+
+    path = _resolve_path_in_graph(graph_file, from_tool, to_tool)
+
+    base_config: RunnerConfig | None = None
+    if agent_config is not None:
+        try:
+            base_config = RunnerConfig.load(agent_config)
+        except Exception as e:
+            raise typer.BadParameter(f"Failed to load agent config: {e}") from e
+        target_uri = base_config.target_uri()
+    else:
+        target_uri = "agent+mock://mock-1"
+
+    authorization = _load_auth(auth, training, target_uri)
+    target_obj = Target.parse(target_uri)
+    reporter = _resolve_reporter(out_format, out_path)
+
+    technique_list: list[str] | None = None
+    if techniques:
+        technique_list = [t.strip() for t in techniques.split(",") if t.strip()]
+
+    try:
+        fuzzer = FuzzPathVerifier(
+            path=path,
+            base_config=base_config,
+            techniques=technique_list,
+            sink_arg_name=sink_arg,
+            stop_on_first_confirm=not no_early_stop,
+        )
+    except ValueError as e:
+        raise typer.BadParameter(str(e)) from e
+
+    session = Session(authorization=authorization)
+
+    async def _run() -> None:
+        async for finding in fuzzer.run(target_obj, session):
+            session.add(finding)
+
+    try:
+        asyncio.run(_run())
+    except Exception as e:
+        err_console.print(f"[red]Fuzz verification failed:[/red] {e}")
         raise typer.Exit(code=1) from e
 
     manifest = session.persist()

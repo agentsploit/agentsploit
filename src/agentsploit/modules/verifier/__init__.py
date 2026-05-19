@@ -21,14 +21,24 @@ Pipeline:
 """
 
 from agentsploit.modules.verifier.batch import BatchPathVerifier
+from agentsploit.modules.verifier.fuzzer import FuzzPathVerifier
 from agentsploit.modules.verifier.synth_config import synth_runner_config
+from agentsploit.modules.verifier.targeted_techniques import (
+    DEFAULT_FUZZ_ORDER,
+    TARGETED_TECHNIQUES,
+    TargetedTechnique,
+)
 from agentsploit.modules.verifier.techniques import PathVerifyTechnique
 from agentsploit.modules.verifier.verifier import PathVerifier, VerifierOutcome
 
 __all__ = [
+    "DEFAULT_FUZZ_ORDER",
+    "TARGETED_TECHNIQUES",
     "BatchPathVerifier",
+    "FuzzPathVerifier",
     "PathVerifier",
     "PathVerifyTechnique",
+    "TargetedTechnique",
     "VerifierOutcome",
     "synth_runner_config",
 ]

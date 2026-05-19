@@ -134,6 +134,31 @@ agentsploit verify all-paths --graph ./.../permission_graph.json \
 
 Deduplicates by `(source, sink)` pair, parallelises with rate-limit-aware concurrency, isolates per-path errors, and emits an aggregate `batch_summary` finding with the confirmation-rate percentage. See [docs/verifier.md](docs/verifier.md#batch-verification-verify-all-paths-v06).
 
+### 7. Technique Fuzzing (v0.7)
+
+The default verifier uses one injection envelope (`role_confusion`). v0.7 adds four more — `direct`, `delimiter`, `unicode_tag`, `tool_smuggling` — and a fuzzer that tries them in sequence until one lands. Knowing *which* envelope wins tells defenders what their injection filter missed.
+
+```bash
+# Single-path fuzz
+agentsploit verify fuzz-path --graph ./.../permission_graph.json \
+  --from read_file --to send_email --training
+
+# Batch fuzz — every path × every technique, with early termination per path
+agentsploit verify all-paths --graph ./.../permission_graph.json \
+  --fuzz --techniques role_confusion,delimiter,unicode_tag \
+  --parallel 3 --training
+```
+
+| Technique | Defender takeaway when this lands |
+|---|---|
+| `role_confusion` | Chat-template filter doesn't catch fake `<system>` turns |
+| `delimiter` | Untrusted content boundaries aren't enforced |
+| `unicode_tag` | Defence strips printable ASCII but not U+E0000 tag block |
+| `tool_smuggling` | Agent runtime parses JSON tool-call syntax out of narrative text |
+| `direct` | No prompt-injection defence in place at all |
+
+See [docs/verifier.md](docs/verifier.md#technique-fuzzing-v07).
+
 ## Install
 
 Requires Python 3.11+.
