@@ -156,6 +156,66 @@ def list_modules(
     console.print(table)
 
 
+@app.command("init")
+def init_engagement(
+    directory: Annotated[
+        Path,
+        typer.Argument(
+            help="Target directory to scaffold (created if missing).",
+        ),
+    ],
+    authorized_by: Annotated[
+        str,
+        typer.Option(
+            "--authorized-by",
+            help='Name + email recorded in authorization.yaml, e.g. "Jane <jane@x.com>"',
+        ),
+    ] = "Operator <ops@example.com>",
+    engagement_id: Annotated[
+        str | None,
+        typer.Option("--engagement-id", help="Engagement identifier (default: auto-generated)"),
+    ] = None,
+    valid_days: Annotated[
+        int, typer.Option("--valid-days", help="Days the authorization stays valid")
+    ] = 30,
+    force: Annotated[
+        bool,
+        typer.Option(
+            "--force",
+            help="Overwrite an existing non-empty directory",
+        ),
+    ] = False,
+) -> None:
+    """Scaffold a new engagement directory with all the YAML configs you need."""
+    from agentsploit.scaffolder import ScaffoldError, scaffold_engagement
+
+    try:
+        written = scaffold_engagement(
+            target_dir=directory,
+            authorized_by=authorized_by,
+            engagement_id=engagement_id,
+            valid_days=valid_days,
+            force=force,
+        )
+    except ScaffoldError as e:
+        raise typer.BadParameter(str(e)) from e
+
+    file_list = "\n".join(f"  - {p.name}" for p in written)
+    console.print(
+        Panel(
+            f"Scaffolded engagement at: [bold]{directory.resolve()}[/bold]\n"
+            f"Files written:\n{file_list}\n\n"
+            "[bold]Next steps:[/bold]\n"
+            "  1. Edit `authorization.yaml` to add real target URIs\n"
+            "  2. Pick an agent config (anthropic/openai/http) and set the API key in env\n"
+            "  3. Edit `map-targets.yaml` with the MCP servers you'll enumerate\n"
+            "  4. Read the generated `README.md` for the standard pipeline\n",
+            title="[green]Engagement scaffolded[/green]",
+            border_style="green",
+        )
+    )
+
+
 @app.command("init-auth")
 def init_auth(
     target: Annotated[

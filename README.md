@@ -232,8 +232,10 @@ pip install agentsploit
 ## Quickstart
 
 ```bash
-# 1. Create an authorization file for your engagement
-agentsploit init-auth --target "stdio://./my-mcp-server" --authorized-by "Jane Doe <ciso@example.com>"
+# 1. Scaffold a new engagement directory (v1.3+): generates auth + agent
+#    configs + map-targets + README in one go
+agentsploit init engagement-q2/ --authorized-by "Jane Doe <ciso@example.com>"
+cd engagement-q2/
 
 # 2. Scan a local stdio MCP server
 agentsploit scan mcp stdio://./my-mcp-server --auth ./authorization.yaml

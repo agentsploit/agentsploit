@@ -12,7 +12,8 @@ agentsploit [--verbose|-v] <subcommand> ...
 |---|---|
 | `version` | Print the AgentSploit version |
 | `list-modules` | List every registered module |
-| `init-auth` | Generate an authorization YAML for an engagement |
+| `init` | Scaffold a new engagement directory (v1.3+) |
+| `init-auth` | Generate a single authorization YAML for an engagement |
 | `scan mcp` | Scan an MCP server (stdio/HTTP/SSE) |
 | `generate injection` | Generate an indirect prompt-injection payload |
 | `run injection` | Drive a generated payload through a live agent |
@@ -22,6 +23,7 @@ agentsploit [--verbose|-v] <subcommand> ...
 | `verify all-paths` | Batch-verify every path in a graph |
 | `verify fuzz-path` | Try multiple injection techniques against one path |
 | `poison verify` | Two-phase memory-poisoning attack against an agent |
+| `poison verify-rag` | RAG poisoning: vector-store variant of `poison verify` |
 
 ---
 
@@ -37,9 +39,22 @@ agentsploit [--verbose|-v] <subcommand> ...
 
 ---
 
+## `init`
+
+Scaffold a complete engagement directory: authorization YAML, agent configs for all three providers, map-targets YAML, README, and `.gitignore`.
+
+```bash
+agentsploit init engagement-2026-q2/ \
+  --authorized-by "Jane Doe <ciso@example.com>" \
+  --engagement-id "rt-2026-q2-mcp-audit" \
+  --valid-days 30
+```
+
+Refuses to overwrite a non-empty target directory unless `--force`. Each generated file is a runnable starting point with comments explaining every option.
+
 ## `init-auth`
 
-Generate an engagement-scoped authorization file.
+Generate just the authorization YAML (without the rest of the engagement directory). Useful when you already have an engagement structure.
 
 ```bash
 agentsploit init-auth \

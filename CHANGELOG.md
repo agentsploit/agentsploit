@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-05-19
+
+### Added
+
+- **`agentsploit init <dir>`**: scaffolds a complete engagement directory
+  in one command. Generates:
+    `authorization.yaml`  scope file (ready to edit)
+    `agent-anthropic.yaml`, `agent-openai.yaml`, `agent-http.yaml`  agent configs for all three providers
+    `map-targets.yaml`  list of MCP servers to enumerate together
+    `README.md`  engagement-specific cheatsheet with the standard pipeline
+    `.gitignore`  excludes the `engagements/` output directory
+  Each template is a runnable starting point with comments documenting
+  every available option (including v1.2 streaming).
+- `scaffolder.py` module with `scaffold_engagement(target_dir, ...)` and
+  `ScaffoldError` for programmatic use. Refuses to overwrite a non-empty
+  directory unless `force=True`.
+- CLI flags: `--authorized-by`, `--engagement-id`, `--valid-days`, `--force`.
+- Unit + integration tests including round-trip validation: every
+  scaffolded YAML loads cleanly through the real `Authorization.load`
+  and `RunnerConfig.load` pipelines (catches template-syntax drift).
+- New section in `docs/getting-started.md` showing the scaffolded
+  starter kit; updated `docs/cli-reference.md`.
+
 ## [1.2.0] - 2026-05-19
 
 ### Added

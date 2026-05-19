@@ -47,9 +47,7 @@ class StreamWatcher(ABC):
     def on_thinking(self, delta: str, accumulated: str) -> bool: ...
 
     @abstractmethod
-    def on_tool_call_args(
-        self, tool_name: str, delta: str, accumulated: str
-    ) -> bool: ...
+    def on_tool_call_args(self, tool_name: str, delta: str, accumulated: str) -> bool: ...
 
     def feed_text(self, delta: str) -> bool:
         """Adapter helper: accumulate text, then delegate to on_text."""

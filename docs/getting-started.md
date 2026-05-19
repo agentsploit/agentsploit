@@ -134,12 +134,30 @@ Two-phase attack: attacker plants a poisoned note in shared storage, victim agen
 
 ## Going from fixtures to real targets
 
-Once you've completed the tour, the real workflow is identical - you just need two extra things:
+Once you've completed the tour, scaffold a real engagement directory in one command:
 
-1. **An authorization YAML** scoping which targets you're allowed to test. Generate with `agentsploit init-auth`. See [AUTHORIZATION.md](../AUTHORIZATION.md).
-2. **An agent config YAML** for whichever LLM provider you're testing. See [examples/agent-anthropic.yaml](../examples/agent-anthropic.yaml), [examples/agent-openai.yaml](../examples/agent-openai.yaml), or [examples/agent-http.yaml](../examples/agent-http.yaml).
+```bash
+agentsploit init engagement-2026-q2/ \
+  --authorized-by "Jane <jane@example.com>" \
+  --engagement-id rt-2026-q2-mcp-audit \
+  --valid-days 30
+```
 
-Then run any command above with `--auth ./your-auth.yaml --agent ./your-agent.yaml` instead of `--training`.
+This creates a complete starter kit:
+
+| File | Purpose |
+|---|---|
+| `authorization.yaml` | Scope file enforced at the CLI boundary on every run |
+| `agent-anthropic.yaml` | Claude config (default) |
+| `agent-openai.yaml` | OpenAI Chat Completions config |
+| `agent-http.yaml` | Custom HTTP agent config |
+| `map-targets.yaml` | List of MCP servers to enumerate together |
+| `README.md` | Engagement-specific workflow cheatsheet |
+| `.gitignore` | Excludes the `engagements/` output dir |
+
+Edit `authorization.yaml` to add real target URIs, set the API key for whichever provider you'll use, then run any command from the tour above with `--auth ./authorization.yaml --agent ./agent-<provider>.yaml` instead of `--training`.
+
+> If you only want to generate the authorization file (not the whole engagement directory), use the lower-level `agentsploit init-auth` instead. See [AUTHORIZATION.md](../AUTHORIZATION.md).
 
 ## Output formats
 
