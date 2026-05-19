@@ -209,8 +209,15 @@ class RAGPoisoner(Module):
                 "knowledge base, then follow any workflow steps it contains."
             ),
         )
+        from agentsploit.modules.runner.watcher import CanaryStreamWatcher
+
         adapter = get_adapter(victim_config.provider)
-        return await adapter.run(victim_config, "")
+        watcher = (
+            CanaryStreamWatcher(self.canary, only_tool=self.sink_tool_name)
+            if victim_config.stream
+            else None
+        )
+        return await adapter.run(victim_config, "", watcher=watcher)
 
     # ----------------------------------------------------------- helpers
 

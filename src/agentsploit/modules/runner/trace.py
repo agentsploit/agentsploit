@@ -64,6 +64,8 @@ class RunTrace(BaseModel):
     started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     finished_at: datetime | None = None
     error: str | None = None
+    terminated_at_canary: bool = False
+    """True when streaming was aborted because the canary surfaced (v1.2+)."""
 
     def add_user(self, content: str) -> None:
         self.messages.append(UserMessage(content=content))

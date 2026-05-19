@@ -1,22 +1,28 @@
-"""MockAgentAdapter - deterministic agent simulator for tests and demos.
+"""MockAgentAdapter: deterministic agent simulator for tests and demos.
 
 Behaviour:
   1. Turn 1: the agent "decides" to call the payload-returning mock tool
   2. The runner returns the payload as that tool's result
   3. Turn 2: the agent inspects the payload's *decoded* contents:
        a. If it sees an instruction of the form "call `<tool_name>` with these
-          arguments: a=X, b=Y, …" AND that tool is registered, it issues a
+          arguments: a=X, b=Y, ..." AND that tool is registered, it issues a
           tool call matching those arguments. (Path-verification scenario.)
        b. Otherwise, if it sees a canary string, it echoes the canary in
           its response text. (v0.3 baseline scenario.)
        c. Otherwise, it produces a benign summary.
 
-This makes the mock agent capable of demonstrating both single-shot canary
-surface AND end-to-end chain completion without needing real LLM tokens.
+v1.2 adds streaming simulation: when a `StreamWatcher` is provided, the
+mock chunks its text + tool-call-args output and feeds each chunk through
+the watcher. If the watcher returns True the run aborts and the trace's
+`terminated_at_canary` flag is set.
+
+This makes the mock a faithful test fixture for both single-shot canary
+surface AND end-to-end streaming termination without burning real LLM tokens.
 """
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
@@ -26,11 +32,12 @@ from agentsploit.modules.runner.trace import RunTrace, ToolCall
 
 if TYPE_CHECKING:
     from agentsploit.modules.runner.config import RunnerConfig
+    from agentsploit.modules.runner.watcher import StreamWatcher
 
 
 _CANARY_RE = re.compile(r"AS-[A-Z0-9]{6,32}")
 
-# Matches "call `<tool>` with these exact arguments: k1='v1', k2='v2', …"
+# Matches "call `<tool>` with these exact arguments: k1='v1', k2='v2', ..."
 _CHAIN_INSTRUCTION_RE = re.compile(
     r"call\s+`?(?P<tool>[A-Za-z_][A-Za-z0-9_]*)`?\s+with\s+"
     r"(?:these\s+(?:exact\s+)?)?arguments?:?\s+(?P<args>.+)",
@@ -39,8 +46,19 @@ _CHAIN_INSTRUCTION_RE = re.compile(
 _ARG_PAIR_RE = re.compile(r"(?P<k>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*'(?P<v>[^']*)'")
 
 
+# Chunk size for simulated streaming. Small enough that a watcher fires
+# mid-string for realistic tokenisation behaviour.
+_STREAM_CHUNK = 16
+
+
 class MockAgentAdapter(AgentAdapter):
-    async def run(self, config: RunnerConfig, payload: str) -> RunTrace:
+    async def run(
+        self,
+        config: RunnerConfig,
+        payload: str,
+        *,
+        watcher: StreamWatcher | None = None,
+    ) -> RunTrace:
         trace = RunTrace(
             provider="mock",
             model=config.model or "mock-1",
@@ -70,11 +88,35 @@ class MockAgentAdapter(AgentAdapter):
         # 2a: look for a chain instruction targeting a registered tool
         chain_call = _extract_chain_call(decoded, config)
         if chain_call is not None:
-            trace.add_assistant(
-                text=f"Per the document's workflow step, calling `{chain_call.name}` now.",
-                tool_calls=[chain_call],
-            )
-            # Simulate the tool's response
+            preamble = f"Per the document's workflow step, calling `{chain_call.name}` now."
+
+            # Stream the assistant's preamble text through the watcher
+            if watcher is not None and config.stream:
+                for chunk in _chunk(preamble, _STREAM_CHUNK):
+                    if watcher.feed_text(chunk):
+                        # Watcher aborted mid-text; record partial assistant turn
+                        partial = _accumulate_prefix(preamble, chunk)
+                        trace.add_assistant(text=partial)
+                        trace.terminated_at_canary = True
+                        trace.finished_at = datetime.now(UTC)
+                        return trace
+
+            # Stream the tool-call args (as JSON deltas) through the watcher
+            args_json = json.dumps(chain_call.arguments)
+            if watcher is not None and config.stream:
+                for chunk in _chunk(args_json, _STREAM_CHUNK):
+                    if watcher.feed_tool_call_args(chain_call.name, chunk):
+                        # Watcher aborted mid-tool-call: emit the assistant
+                        # turn with the partial call recorded but DO NOT
+                        # produce the tool result. The agent never actually
+                        # invoked the sink.
+                        trace.add_assistant(text=preamble, tool_calls=[chain_call])
+                        trace.terminated_at_canary = True
+                        trace.finished_at = datetime.now(UTC)
+                        return trace
+
+            # No watcher aborted: continue with the full chain call
+            trace.add_assistant(text=preamble, tool_calls=[chain_call])
             matched = next((t for t in config.mock_tools if t.name == chain_call.name), None)
             tool_result = (
                 matched.render_response(payload, chain_call.arguments) if matched else "[mock] ok"
@@ -93,13 +135,36 @@ class MockAgentAdapter(AgentAdapter):
             )
         else:
             response_text = "I read the document. It appears to be a routine compliance review."
-        trace.add_assistant(text=response_text)
 
+        # Stream the response through the watcher
+        if watcher is not None and config.stream:
+            accumulated = ""
+            for chunk in _chunk(response_text, _STREAM_CHUNK):
+                accumulated += chunk
+                if watcher.feed_text(chunk):
+                    trace.add_assistant(text=accumulated)
+                    trace.terminated_at_canary = True
+                    trace.finished_at = datetime.now(UTC)
+                    return trace
+
+        trace.add_assistant(text=response_text)
         trace.finished_at = datetime.now(UTC)
         return trace
 
 
 # --------------------------------------------------------------------- helpers
+
+
+def _chunk(text: str, size: int) -> list[str]:
+    return [text[i : i + size] for i in range(0, len(text), size)] or [""]
+
+
+def _accumulate_prefix(full: str, last_chunk: str) -> str:
+    """Return the substring of `full` that ends with `last_chunk`."""
+    idx = full.find(last_chunk)
+    if idx < 0:
+        return last_chunk
+    return full[: idx + len(last_chunk)]
 
 
 def _default_args_for(schema: dict[str, Any]) -> dict[str, str]:

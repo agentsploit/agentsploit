@@ -1,6 +1,8 @@
 """OpenAIAdapter - drives OpenAI Chat Completions with tool use.
 
-Loops until the agent stops calling tools or hits `max_turns`.
+Loops until the agent stops calling tools or hits `max_turns`. v1.2 adds
+streaming via `chat.completions.create(stream=True)`: deltas are fed
+through a StreamWatcher that can abort mid-response.
 """
 
 from __future__ import annotations
@@ -14,6 +16,7 @@ from agentsploit.modules.runner.trace import RunTrace, ToolCall
 
 if TYPE_CHECKING:
     from agentsploit.modules.runner.config import RunnerConfig
+    from agentsploit.modules.runner.watcher import StreamWatcher
 
 
 class OpenAIAdapter(AgentAdapter):
@@ -27,7 +30,13 @@ class OpenAIAdapter(AgentAdapter):
       * Follow-up "tool" role messages need `tool_call_id` + `content`
     """
 
-    async def run(self, config: RunnerConfig, payload: str) -> RunTrace:
+    async def run(
+        self,
+        config: RunnerConfig,
+        payload: str,
+        *,
+        watcher: StreamWatcher | None = None,
+    ) -> RunTrace:
         trace = RunTrace(
             provider="openai",
             model=config.model,
@@ -71,57 +80,46 @@ class OpenAIAdapter(AgentAdapter):
             api_messages.append({"role": "system", "content": config.system_prompt})
         api_messages.append({"role": "user", "content": config.trigger_prompt})
 
+        use_stream = bool(watcher is not None and config.stream)
+
         for _ in range(config.max_turns):
             try:
-                response = await client.chat.completions.create(
-                    model=config.model,
-                    messages=api_messages,  # type: ignore[arg-type]
-                    tools=tools_payload,  # type: ignore[arg-type]
-                )
+                if use_stream:
+                    assert watcher is not None  # narrowed by `use_stream` guard
+                    (
+                        aborted,
+                        text,
+                        tool_calls,
+                        tool_call_payloads,
+                        finish_reason,
+                    ) = await self._stream_one_turn(
+                        client, config, api_messages, tools_payload, watcher
+                    )
+                else:
+                    response = await client.chat.completions.create(
+                        model=config.model,
+                        messages=api_messages,  # type: ignore[arg-type]
+                        tools=tools_payload,  # type: ignore[arg-type]
+                    )
+                    aborted = False
+                    text, tool_calls, tool_call_payloads, finish_reason = self._parse_full_response(
+                        response
+                    )
             except Exception as e:
                 trace.error = f"OpenAI API error: {e}"
                 trace.finished_at = datetime.now(UTC)
                 return trace
 
-            choice = response.choices[0]
-            message = choice.message
-            text = message.content or ""
-
-            tool_calls: list[ToolCall] = []
-            tool_call_payloads: list[dict[str, Any]] = []
-
-            if message.tool_calls:
-                for raw_tc in message.tool_calls:
-                    # Only function-typed tool calls have `.function`. Custom-
-                    # typed tool calls (an OpenAI variant) carry their own
-                    # shape and we don't currently support them.
-                    if getattr(raw_tc, "type", None) != "function":
-                        continue
-                    func = getattr(raw_tc, "function", None)
-                    if func is None:
-                        continue
-
-                    # OpenAI sends arguments as a JSON string - parse it
-                    raw_args = func.arguments or "{}"
-                    try:
-                        args = json.loads(raw_args)
-                    except json.JSONDecodeError:
-                        args = {"_raw": raw_args}
-                    if not isinstance(args, dict):
-                        args = {"_raw": str(args)}
-
-                    tool_calls.append(ToolCall(id=raw_tc.id, name=func.name, arguments=args))
-                    tool_call_payloads.append(
-                        {
-                            "id": raw_tc.id,
-                            "type": "function",
-                            "function": {"name": func.name, "arguments": raw_args},
-                        }
-                    )
-
             trace.add_assistant(text=text, tool_calls=tool_calls)
 
-            if not tool_calls or choice.finish_reason in ("stop", "length"):
+            if aborted:
+                # Stop before invoking any sink tools - the abort point is the
+                # safety win of streaming.
+                trace.terminated_at_canary = True
+                trace.finished_at = datetime.now(UTC)
+                return trace
+
+            if not tool_calls or finish_reason in ("stop", "length"):
                 break
 
             api_messages.append(
@@ -142,3 +140,126 @@ class OpenAIAdapter(AgentAdapter):
 
         trace.finished_at = datetime.now(UTC)
         return trace
+
+    # ---------------------------------------------------------------- helpers
+
+    def _parse_full_response(
+        self, response: Any
+    ) -> tuple[str, list[ToolCall], list[dict[str, Any]], str | None]:
+        choice = response.choices[0]
+        message = choice.message
+        text = message.content or ""
+
+        tool_calls: list[ToolCall] = []
+        tool_call_payloads: list[dict[str, Any]] = []
+
+        if message.tool_calls:
+            for raw_tc in message.tool_calls:
+                if getattr(raw_tc, "type", None) != "function":
+                    continue
+                func = getattr(raw_tc, "function", None)
+                if func is None:
+                    continue
+                raw_args = func.arguments or "{}"
+                try:
+                    args = json.loads(raw_args)
+                except json.JSONDecodeError:
+                    args = {"_raw": raw_args}
+                if not isinstance(args, dict):
+                    args = {"_raw": str(args)}
+                tool_calls.append(ToolCall(id=raw_tc.id, name=func.name, arguments=args))
+                tool_call_payloads.append(
+                    {
+                        "id": raw_tc.id,
+                        "type": "function",
+                        "function": {"name": func.name, "arguments": raw_args},
+                    }
+                )
+        return text, tool_calls, tool_call_payloads, choice.finish_reason
+
+    # ---------------------------------------------------------------- streaming
+
+    async def _stream_one_turn(
+        self,
+        client: Any,
+        config: RunnerConfig,
+        api_messages: list[dict[str, Any]],
+        tools_payload: list[dict[str, Any]],
+        watcher: StreamWatcher,
+    ) -> tuple[bool, str, list[ToolCall], list[dict[str, Any]], str | None]:
+        """Stream one turn through the watcher.
+
+        Returns (aborted, text, tool_calls, tool_call_payloads, finish_reason).
+        On abort the assembled tool_calls reflect partial input state (whatever
+        accumulated before the watcher fired).
+        """
+        aborted = False
+        accumulated_text = ""
+        # tool_call_index -> assembled state
+        partial_tcs: dict[int, dict[str, str]] = {}
+        finish_reason: str | None = None
+
+        stream = await client.chat.completions.create(
+            model=config.model,
+            messages=api_messages,
+            tools=tools_payload,
+            stream=True,
+        )
+
+        async for chunk in stream:
+            if not chunk.choices:
+                continue
+            choice = chunk.choices[0]
+            delta = choice.delta
+            if choice.finish_reason:
+                finish_reason = choice.finish_reason
+
+            content = getattr(delta, "content", None)
+            if content:
+                accumulated_text += content
+                if watcher.feed_text(content):
+                    aborted = True
+                    break
+
+            raw_tcs = getattr(delta, "tool_calls", None) or []
+            for raw_tc in raw_tcs:
+                idx = getattr(raw_tc, "index", 0)
+                slot = partial_tcs.setdefault(idx, {"id": "", "name": "", "arguments": ""})
+                if getattr(raw_tc, "id", None):
+                    slot["id"] = raw_tc.id
+                func = getattr(raw_tc, "function", None)
+                if func is None:
+                    continue
+                if getattr(func, "name", None):
+                    slot["name"] = func.name
+                args_delta = getattr(func, "arguments", None)
+                if args_delta:
+                    slot["arguments"] += args_delta
+                    if slot["name"] and watcher.feed_tool_call_args(slot["name"], args_delta):
+                        aborted = True
+                        break
+            if aborted:
+                break
+
+        tool_calls: list[ToolCall] = []
+        tool_call_payloads: list[dict[str, Any]] = []
+        for slot in partial_tcs.values():
+            if not slot["name"]:
+                continue
+            raw_args = slot["arguments"] or "{}"
+            try:
+                args = json.loads(raw_args)
+            except json.JSONDecodeError:
+                args = {"_raw": raw_args}
+            if not isinstance(args, dict):
+                args = {"_raw": str(args)}
+            tool_calls.append(ToolCall(id=slot["id"] or "tc", name=slot["name"], arguments=args))
+            tool_call_payloads.append(
+                {
+                    "id": slot["id"] or "tc",
+                    "type": "function",
+                    "function": {"name": slot["name"], "arguments": raw_args},
+                }
+            )
+
+        return aborted, accumulated_text, tool_calls, tool_call_payloads, finish_reason

@@ -137,11 +137,24 @@ targets:
 
 Training mode (`--training`) allows `agent+mock://*` and loopback HTTP for safe self-testing.
 
+## Streaming canary detection (v1.2)
+
+Default in v1.2: every adapter that supports streaming (anthropic, openai, mock) feeds incremental output to a `CanaryStreamWatcher` and aborts the run the moment the canary appears. Two wins:
+
+1. **Cost**: a 10-turn run that confirms on turn 1 burns ~10% of the original token count. Real LLM testing was the main bottleneck for `verify all-paths` and `poison verify` at scale; streaming makes those affordable.
+2. **Safety**: when the canary surfaces in a *tool-call args* delta, the adapter aborts BEFORE the agent actually invokes the sink. For real-world tests where the sink does something destructive (sends email, executes a command), this is the difference between "we proved it's exploitable" and "we proved it's exploitable AND sent the email to the attacker."
+
+The trace records `terminated_at_canary: true` when streaming aborted early. Findings produced from such traces still classify identically (CRITICAL for tool-call-args surfaces, HIGH for response-text, etc.) - the only difference is the run cost less and stopped earlier.
+
+Opt-out by setting `stream: false` in the agent YAML config, or pass `--no-stream` if you want the full v0.3-v1.1 behaviour (full response generation before detection).
+
+The HTTP adapter (`provider: http`) does not currently stream - custom in-house endpoints don't have a standard streaming protocol. Subclass `GenericHTTPAdapter` and override `run()` if your endpoint supports SSE.
+
 ## Operational hygiene
 
 - **API key sourcing**: always prefer `api_key_env` in the config + env-var sourcing on the host. Never paste keys into YAML.
-- **Cost control**: set `max_turns` (default 6) and `timeout_seconds` (default 60) conservatively. A misbehaving agent can otherwise burn tokens in a tool-call loop.
-- **Trace artifacts**: every run persists the full normalised trace to `engagements/<engagement_id>/<session_id>/trace-<canary>.json`. Review this when triaging - it's the audit record of what the agent actually saw and did.
+- **Cost control**: set `max_turns` (default 6) and `timeout_seconds` (default 60) conservatively. A misbehaving agent can otherwise burn tokens in a tool-call loop. Streaming (v1.2+, default on) shortcuts most of this once the canary surfaces.
+- **Trace artifacts**: every run persists the full normalised trace to `engagements/<engagement_id>/<session_id>/trace-<canary>.json`. Review this when triaging - it's the audit record of what the agent actually saw and did. The `terminated_at_canary` field tells you whether streaming aborted the run early.
 - **Multiple canaries**: generate a fresh payload per run rather than reusing a canary. If the canary leaks somewhere (logs, screenshots) before the run, your detection is contaminated.
 
 ## What the runner is not

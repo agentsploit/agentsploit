@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-05-19
+
+### Added
+
+- **Streaming canary detection**: every adapter that supports streaming
+  (anthropic, openai, mock) now feeds incremental output to a
+  `CanaryStreamWatcher` and aborts the run the moment the canary
+  surfaces. Two wins per release:
+    * Cost: a 10-turn run that confirms on turn 1 burns ~10% of the
+      original token count
+    * Safety: when the canary appears in a tool-call args delta, the
+      run aborts BEFORE the agent invokes the sink - important for
+      real-world testing where sinks do destructive things
+- `runner.StreamWatcher` protocol with `on_text`, `on_thinking`,
+  `on_tool_call_args` methods. Return True to abort.
+- `runner.CanaryStreamWatcher`: concrete watcher that returns True the
+  moment the canary appears on any watched surface. Records
+  `first_surface` so downstream classification matches v0.5/v0.8/v1.1
+  severity semantics.
+- `RunnerConfig.stream: bool = True` field. Default on; opt-out by
+  setting to False in the agent YAML.
+- `RunTrace.terminated_at_canary: bool` field. True when streaming
+  aborted the run.
+- `AgentAdapter.run(..., watcher=...)` parameter (backward-compatible
+  via default None).
+- Watcher auto-wired through `InjectionRunner`, `PathVerifier`,
+  `MemoryPoisoner`, `RAGPoisoner` - all four orchestrators get the
+  benefit without per-call code changes.
+- `tests/unit/test_canary_stream_watcher.py` + new MockAgentAdapter
+  streaming tests (chunk-boundary detection, only_tool filter,
+  abort-before-sink-invocation safety guarantee).
+
+### Changed
+
+- `MockAgentAdapter`: simulates streaming when a watcher is provided
+  (chunks text + tool-call args, feeds through watcher). Produces
+  faithful test fixtures for the safety guarantee without LLM tokens.
+- `AnthropicAdapter`: uses `client.messages.stream(...)` when streaming
+  is enabled. Handles `text_delta`, `thinking_delta`, and
+  `input_json_delta` events.
+- `OpenAIAdapter`: uses `chat.completions.create(stream=True)` when
+  streaming is enabled. Accumulates tool-call args from streamed
+  function-call deltas.
+- `GenericHTTPAdapter`: accepts (but ignores) the watcher for ABC
+  compliance. Custom HTTP endpoints don't have a standard streaming
+  protocol; subclass and override `run()` to wire SSE.
+- `docs/runner.md`: new "Streaming canary detection (v1.2)" section
+  documenting the cost + safety wins and the opt-out path.
+
 ## [1.1.0] - 2026-05-19
 
 ### Added

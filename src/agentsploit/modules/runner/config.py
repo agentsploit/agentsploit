@@ -71,6 +71,14 @@ class RunnerConfig(BaseModel):
     """Maximum assistant turns before the adapter stops. Prevents runaway loops."""
 
     timeout_seconds: float = 60.0
+
+    stream: bool = True
+    """When True (v1.2+ default), adapters that support streaming will emit
+    tokens incrementally and a CanaryStreamWatcher aborts the run the moment
+    the canary surfaces. Saves tokens and prevents the agent from completing
+    a destructive tool call once exploitability is confirmed. Set False to
+    force the v0.3-v1.1 full-response behaviour."""
+
     detection: CanaryDetectionConfig = Field(default_factory=CanaryDetectionConfig)
 
     @field_validator("provider")

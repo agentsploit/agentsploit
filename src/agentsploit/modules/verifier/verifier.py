@@ -146,9 +146,18 @@ class PathVerifier(Module):
                 timeout_seconds=self.base_config.timeout_seconds,
             )
 
-        # Drive the agent
+        # Drive the agent. Scope the canary watcher to the path's sink so
+        # the v0.5 "only proves if sink got the canary" guarantee carries
+        # through to early-termination decisions.
+        from agentsploit.modules.runner.watcher import CanaryStreamWatcher
+
         adapter = get_adapter(config.provider)
-        trace = await adapter.run(config, payload)
+        watcher = (
+            CanaryStreamWatcher(self.canary, only_tool=self.path.sink.name)
+            if config.stream
+            else None
+        )
+        trace = await adapter.run(config, payload, watcher=watcher)
 
         # Persist trace
         trace_path = session.artifact_dir / f"verify-trace-{self.canary}.json"

@@ -87,8 +87,20 @@ class InjectionRunner(Module):
             canary=self.canary,
         )
 
+        from agentsploit.modules.runner.watcher import CanaryStreamWatcher
+
         adapter = get_adapter(self.config.provider)
-        trace = await adapter.run(self.config, self.payload)
+        watcher = (
+            CanaryStreamWatcher(
+                self.canary,
+                watch_text=self.config.detection.watch_response_text,
+                watch_thinking=self.config.detection.watch_thinking,
+                watch_tool_calls=self.config.detection.watch_tool_call_args,
+            )
+            if self.config.stream
+            else None
+        )
+        trace = await adapter.run(self.config, self.payload, watcher=watcher)
 
         # Persist the full trace to the engagement artifact directory
         trace_path = session.artifact_dir / f"trace-{self.canary}.json"

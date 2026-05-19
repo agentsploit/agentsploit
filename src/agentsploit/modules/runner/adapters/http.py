@@ -38,12 +38,25 @@ from agentsploit.modules.runner.trace import RunTrace, ToolCall
 
 if TYPE_CHECKING:
     from agentsploit.modules.runner.config import RunnerConfig
+    from agentsploit.modules.runner.watcher import StreamWatcher
 
 
 class GenericHTTPAdapter(AgentAdapter):
-    """Drive a custom HTTP agent endpoint using OpenAI-shaped semantics."""
+    """Drive a custom HTTP agent endpoint using OpenAI-shaped semantics.
 
-    async def run(self, config: RunnerConfig, payload: str) -> RunTrace:
+    Streaming note: v1.2's `watcher` parameter is accepted for ABC
+    compliance but ignored. Custom HTTP agents don't have a standard
+    streaming protocol; if your endpoint supports SSE, subclass this and
+    override `run()` to wire the watcher.
+    """
+
+    async def run(
+        self,
+        config: RunnerConfig,
+        payload: str,
+        *,
+        watcher: StreamWatcher | None = None,  # accepted for ABC, unused
+    ) -> RunTrace:
         trace = RunTrace(
             provider="http",
             model=config.model,
