@@ -4,20 +4,55 @@ on:
   push:
     tags: ["v*"]
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  # Gate the release on the same quality gates we ship between releases.
+  # If tests / lint / type-check fail, no wheel goes to PyPI.
+  verify:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
-      - run: uv build
-      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          enable-cache: true
+      - run: uv sync --all-extras
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy src
+      - run: uv run pytest -q
+
+  build-and-publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write     # PyPI Trusted Publishing (OIDC)
+      contents: write     # GitHub Release creation
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Build wheel + sdist
+        run: uv build
+
+      - name: Smoke-test the built wheel installs cleanly
+        run: |
+          uv venv /tmp/release-smoke
+          /tmp/release-smoke/bin/pip install dist/*.whl
+          /tmp/release-smoke/bin/agentsploit version
+
+      - name: Publish to PyPI (Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
-      - uses: softprops/action-gh-release@v2
+          attestations: true
+
+      - name: Create GitHub Release with auto-generated notes
+        uses: softprops/action-gh-release@v2
         with:
           files: dist/*
           generate_release_notes: true
+          fail_on_unmatched_files: true

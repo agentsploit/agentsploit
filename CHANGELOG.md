@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-18
+
+First stable release. No new attack capabilities — instead this release is
+all polish, packaging, and interoperability work that promises the public
+API is stable and the SARIF output is interchange-grade.
+
+### Added
+
+- **`docs/getting-started.md`** — guided 10-minute pipeline tour with the
+  bundled fixtures, no API keys or auth YAML required
+- **`docs/cli-reference.md`** — complete CLI cheatsheet covering every
+  subcommand, flag, URI scheme, and exit code
+- **`docs/sarif.md`** — SARIF 2.1.0 integration guide with a copy-pasteable
+  GitHub Code Scanning workflow + severity-mapping table
+- **Benign MCP fixture** (`tests/fixtures/benign_mcp/`) — a well-engineered
+  reference server with narrow schemas, plain descriptions, namespaced
+  tool names. Used by the new smoke test that proves the scanner doesn't
+  false-positive on non-vulnerable targets.
+- **`tests/integration/test_sarif_schema.py`** — validates every SARIF
+  output against the official 2.1.0 JSON Schema. v1.0 guarantees this
+  passes for every release.
+- README status badges (1.0 stable, Python, license, SARIF)
+- `jsonschema>=4.23.0` to dev dependencies (powers the SARIF audit test)
+
+### Changed
+
+- `pyproject.toml` classifier bumped to `Development Status :: 5 - Production/Stable`
+- **`SECURITY.md`** rewritten with concrete SLAs (72 h ack, 7 d triage, 30
+  d HIGH/CRITICAL fix, 60 d MEDIUM fix), supported-versions table
+  reflecting 1.0, and a Hall of Fame for credited reporters
+- **Release workflow** (`.github/workflows/release.yml`) now gates publish
+  on the full quality suite (ruff + mypy + pytest), wheel-installs into a
+  clean venv as a smoke check, and uses PyPI Trusted Publishing
+  attestations
+- `TrainingAuth` extended to allow the benign fixture
+
+### Verified
+
+- 230+ tests pass across unit + integration suites
+- mypy strict-mode clean on all source files
+- ruff lint + format clean
+- SARIF output validates against the official 2.1.0 JSON Schema
+- `uv build` + fresh-venv install + `agentsploit version` works end-to-end
+- Scanner produces zero non-INFO findings against the benign fixture
+  (no false positives)
+
 ## [0.9.0] - 2026-05-18
 
 ### Added

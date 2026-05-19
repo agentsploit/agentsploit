@@ -1,11 +1,18 @@
 # AgentSploit
 
+[![Status: 1.0 stable](https://img.shields.io/badge/status-1.0_stable-brightgreen)](CHANGELOG.md)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue)](pyproject.toml)
+[![Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-blue)](LICENSE)
+[![SARIF 2.1.0](https://img.shields.io/badge/SARIF-2.1.0-blueviolet)](docs/sarif.md)
+
 **Offensive security framework for AI agents and MCP servers.**
 
 AgentSploit is a Burp Suite / Metasploit-style framework purpose-built for the agentic AI attack surface. It helps red teamers, AI security researchers, and product security teams probe LLM agents and Model Context Protocol (MCP) servers for vulnerabilities that legacy tooling cannot find.
 
 > [!IMPORTANT]
 > **AgentSploit is an authorized-use security testing tool.** You must have explicit written permission to scan any target you do not own. See [AUTHORIZATION.md](AUTHORIZATION.md) before running anything.
+
+**👉 New here? Start with [docs/getting-started.md](docs/getting-started.md) — a 10-minute tour of every capability against bundled fixtures, no API keys needed.**
 
 ---
 

@@ -1,6 +1,6 @@
 [project]
 name = "agentsploit"
-version = "0.9.0"
+version = "1.0.0"
 description = "Offensive security framework for AI agents and MCP servers"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -10,7 +10,7 @@ authors = [
 ]
 keywords = ["security", "offensive-security", "ai-security", "mcp", "agent-security", "red-team", "prompt-injection"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Information Technology",
     "License :: OSI Approved :: Apache Software License",
@@ -46,6 +46,7 @@ dev = [
     "ruff>=0.8.0",
     "mypy>=1.13.0",
     "types-pyyaml>=6.0.12",
+    "jsonschema>=4.23.0",
 ]
 
 [project.scripts]

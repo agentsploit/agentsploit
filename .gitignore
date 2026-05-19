@@ -48,3 +48,6 @@ engagements/
 *.engagement
 authorization-*.yaml
 !authorization-example.yaml
+
+# Cached SARIF schema (refetched on first test run)
+tests/.sarif_schema_cache.json
