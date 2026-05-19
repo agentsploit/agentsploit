@@ -227,6 +227,17 @@ agentsploit poison verify-thread \
 
 Realistic against OpenAI Assistants threads, customer-support chatbots with multi-message state, and multi-tenant chat platforms where users share session context. See [docs/poisoning.md#conversation-thread-poisoning-v14](docs/poisoning.md#conversation-thread-poisoning-v14).
 
+### 11. Web UI (v1.5)
+
+A local web app for browsing engagement output (sessions, findings, permission graphs, traces) in the browser instead of grepping JSON. Read-only as of v1.5 — triggering scans/verifies from the UI lands with the live-engagement dashboard in v1.6.
+
+```bash
+agentsploit serve
+# -> http://127.0.0.1:8800
+```
+
+Cytoscape-rendered permission graphs, severity-filtered findings tables with per-finding evidence drilldowns, no extra processes to manage. Defaults to localhost-only because engagement artifacts may contain canaries, tool arguments, and finding evidence. See [docs/web-ui.md](docs/web-ui.md).
+
 ## Install
 
 Requires Python 3.11+.

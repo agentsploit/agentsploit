@@ -1,6 +1,6 @@
 [project]
 name = "agentsploit"
-version = "1.4.0"
+version = "1.5.0"
 description = "Offensive security framework for AI agents and MCP servers"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -36,6 +36,8 @@ dependencies = [
     "ics>=0.7.2",
     "anthropic>=0.45.0",
     "openai>=1.50.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
 ]
 
 [project.optional-dependencies]
@@ -64,6 +66,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agentsploit"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/agentsploit/web/frontend" = "agentsploit/web/frontend"
 
 [tool.ruff]
 line-length = 100

@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-05-19
+
+### Added
+
+- **Web UI** (`agentsploit serve`): read-only browser for engagement
+  output. Browse sessions, inspect findings with severity filtering,
+  explore permission graphs with a Cytoscape-rendered map, drill into
+  per-finding evidence. Built on FastAPI + React 18 + Vite + TanStack
+  Query + Tailwind. The wheel ships a pre-built bundle (no `npm` needed
+  to run, only to develop).
+- `agentsploit.web` package: `web.server.build_app(engagement_dir)`
+  returns a FastAPI app; `web.server.serve(host, port, engagement_dir)`
+  is the uvicorn entry point. Reuses the existing on-disk engagement
+  layout — no schema migrations.
+- REST API (`/api/`): `health`, `sessions`, `sessions/{id}`,
+  `sessions/{id}/findings`, `sessions/{id}/graph`,
+  `sessions/{id}/traces`, `sessions/{id}/traces/{filename}`. Every
+  endpoint path-traversal-safe.
+- Frontend bundle ships inside the wheel via Hatch
+  `[tool.hatch.build.targets.wheel.force-include]`. `ui/` source tree
+  builds to `src/agentsploit/web/frontend/` so dev and packaged paths
+  match.
+- Bind hardening: `serve` defaults to `127.0.0.1` and prints a loud
+  warning if bound elsewhere, because engagement artifacts may contain
+  sensitive content (canaries, tool args, finding evidence) and v1.5
+  has no authentication. Authentication lands in v1.6.
+
+### Notes
+
+Path explorer page and live engagement dashboard (with SSE-driven
+real-time updates) are queued for v1.6.
+
 ## [1.4.0] - 2026-05-19
 
 ### Added

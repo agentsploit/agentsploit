@@ -130,6 +130,43 @@ def version() -> None:
     console.print(f"agentsploit {__version__}")
 
 
+@app.command("serve")
+def serve(
+    host: Annotated[
+        str, typer.Option("--host", help="Interface to bind. Defaults to localhost.")
+    ] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", "-p", help="Port to bind.")] = 8800,
+    engagement_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--engagement-dir",
+            "-d",
+            help="Directory to scan for sessions. Defaults to ./engagements.",
+        ),
+    ] = None,
+) -> None:
+    """Start the AgentSploit web UI for browsing engagement output.
+
+    Serves a read-only view of sessions, findings, permission graphs, and
+    traces. Defaults to localhost-only because engagement artifacts may
+    contain sensitive content. Authentication lands in v1.6.
+    """
+    from agentsploit.web.server import serve as _serve
+
+    resolved = engagement_dir or Path.cwd() / "engagements"
+    if not resolved.exists():
+        err_console.print(
+            f"[yellow]Engagement directory not found: {resolved}[/yellow]\n"
+            f"Hint: run `agentsploit init <dir>` to scaffold one, "
+            f"or pass --engagement-dir <path>."
+        )
+    console.print(
+        f"[green]Starting AgentSploit UI[/green] -> http://{host}:{port}  "
+        f"(engagement_dir={resolved})"
+    )
+    _serve(host=host, port=port, engagement_dir=resolved)
+
+
 @app.command("list-modules")
 def list_modules(
     category: Annotated[

@@ -51,3 +51,9 @@ authorization-*.yaml
 
 # Cached SARIF schema (refetched on first test run)
 tests/.sarif_schema_cache.json
+
+# Frontend dev artefacts (the built bundle IS checked in so installs work
+# without a Node toolchain; only dev/intermediate files are excluded)
+ui/node_modules/
+ui/tsconfig.tsbuildinfo
+ui/dist/
