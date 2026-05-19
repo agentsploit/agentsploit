@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-05-19
+
+Cross-platform compatibility + ship-readiness patch. No new features; the
+behavior of every existing command on Linux/macOS is unchanged. The
+release matters for Windows operators and for the wheel itself.
+
+### Fixed
+
+- **Windows token path.** `agentsploit serve` now stores the bearer
+  token under `%APPDATA%\agentsploit\web-token` on Windows (with
+  fallback to `~/AppData/Roaming/agentsploit/` if `APPDATA` is unset),
+  instead of the Unix-only `~/.config/`.
+- **Windows MCP stdio paths.** `stdio://C:\path\server.py` URIs are now
+  detected as a Python script path. The shlex split is whitespace-aware
+  so backslash separators survive (previously, POSIX shlex ate them).
+- **Windows chmod warning.** `os.chmod(0o600)` on the token file no
+  longer silently fails on Windows; we log a structured warning so
+  operators know token security relies on NTFS ACLs on the parent dir.
+- **File encoding everywhere.** All 24 `Path.read_text()` /
+  `Path.write_text()` call sites now pass `encoding="utf-8"` explicitly.
+  Without this, Windows would default to `cp1252` and mangle non-ASCII
+  content in session manifests, YAML auth files, finding evidence,
+  trace artifacts, etc. Session JSON is now also written with
+  `ensure_ascii=False` so unicode strings are stored readably instead
+  of `\u...` escaped.
+- **Wheel layout.** Removed the redundant `force-include` for the
+  frontend bundle in `pyproject.toml`; the `artifacts` directive now
+  handles it. The built wheel no longer contains duplicate zip entries
+  for `agentsploit/web/frontend/*` (previously 6 entries for 3 files,
+  with `Duplicate name` build warnings).
+
+### Changed
+
+- CI test matrix now includes `windows-latest` alongside ubuntu/macos,
+  on Python 3.11/3.12/3.13. Cross-platform regressions land in CI on
+  push.
+- pyproject.toml classifiers add `Operating System :: Microsoft :: Windows`.
+- New `tests/unit/test_cross_platform.py` covers token-path resolution,
+  chmod-warning behaviour, stdio backslash paths, UTF-8 round-trip
+  through session + authorization persistence, and a regression guard
+  against hardcoded `/tmp/` paths in source.
+
 ## [1.6.0] - 2026-05-19
 
 ### Added

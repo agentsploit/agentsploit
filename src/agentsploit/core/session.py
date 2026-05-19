@@ -43,19 +43,19 @@ class Session(BaseModel):
     def persist(self) -> Path:
         """Write the session manifest + findings to disk; return the manifest path."""
         manifest = self.artifact_dir / "session.json"
-        manifest.write_text(
-            json.dumps(
-                {
-                    "session_id": self.id,
-                    "engagement_id": self.authorization.engagement_id,
-                    "authorized_by": self.authorization.authorized_by,
-                    "auth_hash": self.authorization.source_hash,
-                    "started_at": self.started_at.isoformat(),
-                    "finished_at": datetime.now(UTC).isoformat(),
-                    "finding_count": len(self.findings),
-                    "findings": [f.model_dump(mode="json") for f in self.findings],
-                },
-                indent=2,
-            )
+        blob = json.dumps(
+            {
+                "session_id": self.id,
+                "engagement_id": self.authorization.engagement_id,
+                "authorized_by": self.authorization.authorized_by,
+                "auth_hash": self.authorization.source_hash,
+                "started_at": self.started_at.isoformat(),
+                "finished_at": datetime.now(UTC).isoformat(),
+                "finding_count": len(self.findings),
+                "findings": [f.model_dump(mode="json") for f in self.findings],
+            },
+            indent=2,
+            ensure_ascii=False,
         )
+        manifest.write_text(blob, encoding="utf-8")
         return manifest

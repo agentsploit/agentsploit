@@ -104,7 +104,10 @@ class InjectionRunner(Module):
 
         # Persist the full trace to the engagement artifact directory
         trace_path = session.artifact_dir / f"trace-{self.canary}.json"
-        trace_path.write_text(json.dumps(trace.model_dump(mode="json"), indent=2, default=str))
+        trace_path.write_text(
+            json.dumps(trace.model_dump(mode="json"), indent=2, default=str),
+            encoding="utf-8",
+        )
 
         if trace.error:
             yield Finding(

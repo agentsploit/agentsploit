@@ -205,13 +205,15 @@ def serve(
 
     token: str | None = None
     if not no_auth:
+        from agentsploit.web.auth import _TOKEN_DEFAULT_PATH
+
         token = load_or_create_token()
         console.print(
             Panel(
                 f"[bold]Web token:[/bold] {token}\n\n"
                 f"Send as [cyan]Authorization: Bearer <token>[/cyan] (or "
                 f"[cyan]?token=...[/cyan] for SSE). The token is persisted "
-                f"at [dim]~/.config/agentsploit/web-token[/dim] - same "
+                f"at [dim]{_TOKEN_DEFAULT_PATH}[/dim] - same "
                 f"value on next start unless you delete that file.",
                 title="[green]auth[/green]",
                 border_style="green",
@@ -505,7 +507,7 @@ def generate_injection(
     if isinstance(artifact.payload, bytes):
         out.write_bytes(artifact.payload)
     else:
-        out.write_text(artifact.payload)
+        out.write_text(artifact.payload, encoding="utf-8")
 
     console.print(
         Panel(
@@ -727,7 +729,7 @@ def map_export(
     from agentsploit.modules.mapper.exporter import to_dot, to_json, to_mermaid
     from agentsploit.modules.mapper.models import Graph
 
-    raw = _json.loads(graph_file.read_text())
+    raw = _json.loads(graph_file.read_text(encoding="utf-8"))
     graph = Graph.model_validate(raw)
 
     match fmt:
@@ -743,7 +745,7 @@ def map_export(
     if out is None:
         console.print(rendered)
     else:
-        out.write_text(rendered)
+        out.write_text(rendered, encoding="utf-8")
         console.print(f"Wrote {fmt} graph to [bold]{out}[/bold]")
 
 
@@ -757,7 +759,7 @@ def _resolve_path_in_graph(graph_file: Path, from_tool: str, to_tool: str) -> Ma
     from agentsploit.modules.mapper.models import Graph
     from agentsploit.modules.mapper.paths import shortest_path
 
-    raw = _json.loads(graph_file.read_text())
+    raw = _json.loads(graph_file.read_text(encoding="utf-8"))
     graph = Graph.model_validate(raw)
 
     matches_src = [n for n in graph.nodes.values() if n.name == from_tool]
@@ -924,7 +926,7 @@ def verify_all_paths(
     from agentsploit.modules.runner.config import RunnerConfig
     from agentsploit.modules.verifier.batch import BatchPathVerifier
 
-    raw = _json.loads(graph_file.read_text())
+    raw = _json.loads(graph_file.read_text(encoding="utf-8"))
     graph = Graph.model_validate(raw)
 
     try:

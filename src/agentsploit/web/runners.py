@@ -81,7 +81,7 @@ async def run_path_verify(ctx: JobContext) -> None:
         raise FileNotFoundError(
             f"session {source_session_id!r} has no paths.json - run `map build` first"
         )
-    paths_blob = json.loads(paths_path.read_text())
+    paths_blob = json.loads(paths_path.read_text(encoding="utf-8"))
     matches = [p for p in paths_blob.get("paths", []) if p.get("id") == path_id]
     if not matches:
         raise ValueError(f"path id {path_id!r} not found in {paths_path}")

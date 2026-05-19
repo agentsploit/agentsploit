@@ -134,20 +134,19 @@ class ThreadPoisoner(Module):
         store_dump = store.snapshot()
 
         artifact = session.artifact_dir / f"thread-poison-{self.canary}.json"
-        artifact.write_text(
-            json.dumps(
-                {
-                    "canary": self.canary,
-                    "thread_id": self.thread_id,
-                    "thread_snapshot": store_dump,
-                    "appends": store.appends,
-                    "reads": store.reads,
-                    "victim_trace": victim_trace.model_dump(mode="json"),
-                },
-                indent=2,
-                default=str,
-            )
+        blob = json.dumps(
+            {
+                "canary": self.canary,
+                "thread_id": self.thread_id,
+                "thread_snapshot": store_dump,
+                "appends": store.appends,
+                "reads": store.reads,
+                "victim_trace": victim_trace.model_dump(mode="json"),
+            },
+            indent=2,
+            default=str,
         )
+        artifact.write_text(blob, encoding="utf-8")
 
         outcome = self._classify(store, victim_trace)
 

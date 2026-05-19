@@ -146,20 +146,19 @@ class MemoryPoisoner(Module):
         store_dump = store.snapshot()
 
         artifact = session.artifact_dir / f"poison-{self.canary}.json"
-        artifact.write_text(
-            json.dumps(
-                {
-                    "canary": self.canary,
-                    "store_key": self.store_key,
-                    "store_snapshot": store_dump,
-                    "store_writes": store.writes,
-                    "store_reads": store.reads,
-                    "victim_trace": victim_trace.model_dump(mode="json"),
-                },
-                indent=2,
-                default=str,
-            )
+        blob = json.dumps(
+            {
+                "canary": self.canary,
+                "store_key": self.store_key,
+                "store_snapshot": store_dump,
+                "store_writes": store.writes,
+                "store_reads": store.reads,
+                "victim_trace": victim_trace.model_dump(mode="json"),
+            },
+            indent=2,
+            default=str,
         )
+        artifact.write_text(blob, encoding="utf-8")
 
         outcome = self._classify(store, victim_trace)
 

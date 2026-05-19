@@ -85,7 +85,7 @@ class JSONReporter(Reporter):
             "auth_hash": session.authorization.source_hash,
             "findings": [f.model_dump(mode="json") for f in session.findings],
         }
-        self.path.write_text(json.dumps(data, indent=2))
+        self.path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
 class SARIFReporter(Reporter):
@@ -147,7 +147,7 @@ class SARIFReporter(Reporter):
                 }
             ],
         }
-        self.path.write_text(json.dumps(sarif, indent=2))
+        self.path.write_text(json.dumps(sarif, indent=2), encoding="utf-8")
 
     @staticmethod
     def _sarif_level(severity: Severity) -> str:

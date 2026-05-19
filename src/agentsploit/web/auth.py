@@ -24,11 +24,32 @@ from __future__ import annotations
 
 import os
 import secrets
+import sys
 from pathlib import Path
 
 from fastapi import Header, HTTPException, Query
 
-_TOKEN_DEFAULT_PATH = Path.home() / ".config" / "agentsploit" / "web-token"
+from agentsploit.utils.logging import get_logger
+
+log = get_logger(__name__)
+
+
+def _default_token_path() -> Path:
+    """Cross-platform location for the persisted bearer token.
+
+    - Linux/macOS: `${XDG_CONFIG_HOME:-$HOME/.config}/agentsploit/web-token`
+    - Windows: `%APPDATA%\\agentsploit\\web-token` (or `~/AppData/Roaming` fallback)
+    """
+    if sys.platform == "win32":
+        appdata = os.environ.get("APPDATA")
+        base = Path(appdata) if appdata else Path.home() / "AppData" / "Roaming"
+        return base / "agentsploit" / "web-token"
+    xdg = os.environ.get("XDG_CONFIG_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".config"
+    return base / "agentsploit" / "web-token"
+
+
+_TOKEN_DEFAULT_PATH = _default_token_path()
 
 
 class _AuthState:
@@ -49,21 +70,31 @@ def configure(*, token: str | None, enabled: bool) -> None:
 def load_or_create_token(token_path: Path | None = None) -> str:
     """Read the persisted token, or mint a new one if absent.
 
-    The token file is chmod 600 because it's an unscoped admin secret
-    for this server instance.
+    On POSIX, the file is chmod 600 because it's an unscoped admin secret.
+    On Windows, `os.chmod` has no effect on ACLs - we log a warning instead
+    of silently failing so operators on shared Windows hosts know the
+    token file is governed by the parent directory's NTFS ACL, not by Unix
+    mode bits.
     """
     path = token_path or _TOKEN_DEFAULT_PATH
     if path.exists():
-        token = path.read_text().strip()
+        token = path.read_text(encoding="utf-8").strip()
         if token:
             return token
     path.parent.mkdir(parents=True, exist_ok=True)
     token = secrets.token_urlsafe(32)
-    path.write_text(token + "\n")
-    try:
-        os.chmod(path, 0o600)
-    except OSError:
-        pass
+    path.write_text(token + "\n", encoding="utf-8")
+    if sys.platform == "win32":
+        log.warning(
+            "Windows: cannot chmod 600 the bearer token file at %s. "
+            "Token security relies on the parent directory's NTFS ACL.",
+            path,
+        )
+    else:
+        try:
+            os.chmod(path, 0o600)
+        except OSError as e:
+            log.warning("Could not chmod 600 token file %s: %s", path, e)
     return token
 
 

@@ -109,7 +109,7 @@ def _read_manifest(session_dir: Path) -> dict[str, Any]:
     if not manifest.exists():
         return {}
     try:
-        data = json.loads(manifest.read_text())
+        data = json.loads(manifest.read_text(encoding="utf-8"))
         return data if isinstance(data, dict) else {}
     except json.JSONDecodeError:
         return {}
@@ -235,7 +235,7 @@ def get_graph(session_id: str) -> JSONResponse:
     if not graph_path.exists():
         raise HTTPException(status_code=404, detail="this session has no permission graph")
     try:
-        data = json.loads(graph_path.read_text())
+        data = json.loads(graph_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"invalid graph JSON: {e}") from e
     return JSONResponse(content=data)
@@ -268,7 +268,7 @@ def get_trace(session_id: str, trace_filename: str) -> JSONResponse:
     if not trace_path.exists() or trace_path.suffix != ".json":
         raise HTTPException(status_code=404, detail="trace not found")
     try:
-        data = json.loads(trace_path.read_text())
+        data = json.loads(trace_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"invalid trace JSON: {e}") from e
     return JSONResponse(content=data)
@@ -309,7 +309,7 @@ def list_paths(session_id: str) -> list[PathSummary]:
     if not paths_path.exists():
         return []
     try:
-        blob = json.loads(paths_path.read_text())
+        blob = json.loads(paths_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"invalid paths JSON: {e}") from e
     items = blob.get("paths") or []

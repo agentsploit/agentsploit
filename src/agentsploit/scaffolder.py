@@ -324,7 +324,7 @@ def scaffold_engagement(
         path = target_dir / filename
         if path.exists() and not force:
             raise ScaffoldError(f"{path} already exists. Use --force to overwrite.")
-        path.write_text(template.format(**context))
+        path.write_text(template.format(**context), encoding="utf-8")
         written.append(path)
 
     return written

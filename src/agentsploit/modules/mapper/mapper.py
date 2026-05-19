@@ -29,27 +29,26 @@ def _path_id(idx: int, path: MapperPath) -> str:
 
 def _write_paths_json(out_path: Path, paths: list[MapperPath]) -> None:
     """Persist discovered paths so the web UI / `verify path-by-id` can read them."""
-    out_path.write_text(
-        json.dumps(
-            {
-                "paths": [
-                    {
-                        "id": _path_id(i, p),
-                        "source": p.source.model_dump(mode="json"),
-                        "sink": p.sink.model_dump(mode="json"),
-                        "nodes": [n.model_dump(mode="json") for n in p.nodes],
-                        "edges": [e.model_dump(mode="json") for e in p.edges],
-                        "length": p.length,
-                        "total_weight": p.total_weight,
-                        "severity_score": p.severity_score,
-                        "render": p.render(),
-                    }
-                    for i, p in enumerate(paths)
-                ]
-            },
-            indent=2,
-        )
+    blob = json.dumps(
+        {
+            "paths": [
+                {
+                    "id": _path_id(i, p),
+                    "source": p.source.model_dump(mode="json"),
+                    "sink": p.sink.model_dump(mode="json"),
+                    "nodes": [n.model_dump(mode="json") for n in p.nodes],
+                    "edges": [e.model_dump(mode="json") for e in p.edges],
+                    "length": p.length,
+                    "total_weight": p.total_weight,
+                    "severity_score": p.severity_score,
+                    "render": p.render(),
+                }
+                for i, p in enumerate(paths)
+            ]
+        },
+        indent=2,
     )
+    out_path.write_text(blob, encoding="utf-8")
 
 
 log = get_logger(__name__)
@@ -107,7 +106,7 @@ class PermissionMapper(Module):
         graph_path = session.artifact_dir / "permission_graph.json"
         from agentsploit.modules.mapper.exporter import to_json
 
-        graph_path.write_text(to_json(graph))
+        graph_path.write_text(to_json(graph), encoding="utf-8")
 
         yield Finding(
             module=self.META.name,

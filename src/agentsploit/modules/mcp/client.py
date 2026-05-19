@@ -66,15 +66,28 @@ async def _stdio_session(target: Target) -> AsyncIterator[ClientSession]:
              stdio://python -m my_mcp_server
     """
     raw = target.uri[len("stdio://") :]
-    parts = shlex.split(raw)
+    # If there's no whitespace, treat the whole tail as one argument so that
+    # Windows paths with backslashes (`stdio://C:\\mcp\\server.py`) survive.
+    # `shlex.split(posix=True)` would otherwise eat the backslashes as escapes.
+    if any(c.isspace() for c in raw):
+        parts = shlex.split(raw)
+    else:
+        parts = [raw]
     if not parts:
         raise MCPClientError(f"Empty stdio command in URI: {target.uri!r}")
 
-    if parts[0].endswith(".py") or "/" in parts[0]:
+    # Detect "this is a path to a Python script, not a bare command" so we know
+    # to launch it via `python <script>`. Accept both POSIX (`/`) and Windows
+    # (`\`) separators so `stdio://C:\\path\\server.py` works on Windows.
+    first = parts[0]
+    looks_like_path = (
+        first.endswith(".py") or "/" in first or "\\" in first or first.startswith(".")
+    )
+    if looks_like_path:
         command = "python"
         args = parts
     else:
-        command = parts[0]
+        command = first
         args = parts[1:]
 
     params = StdioServerParameters(command=command, args=args, env=None)

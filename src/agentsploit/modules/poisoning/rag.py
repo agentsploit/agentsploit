@@ -155,22 +155,21 @@ class RAGPoisoner(Module):
         ranked_top_score = store.last_match_score
 
         artifact = session.artifact_dir / f"rag-poison-{self.canary}.json"
-        artifact.write_text(
-            json.dumps(
-                {
-                    "canary": self.canary,
-                    "target_query": self.target_query,
-                    "store_snapshot": store_dump,
-                    "store_writes": store.writes,
-                    "store_reads": store.reads,
-                    "last_match_id": ranked_top_id,
-                    "last_match_score": ranked_top_score,
-                    "victim_trace": victim_trace.model_dump(mode="json"),
-                },
-                indent=2,
-                default=str,
-            )
+        blob = json.dumps(
+            {
+                "canary": self.canary,
+                "target_query": self.target_query,
+                "store_snapshot": store_dump,
+                "store_writes": store.writes,
+                "store_reads": store.reads,
+                "last_match_id": ranked_top_id,
+                "last_match_score": ranked_top_score,
+                "victim_trace": victim_trace.model_dump(mode="json"),
+            },
+            indent=2,
+            default=str,
         )
+        artifact.write_text(blob, encoding="utf-8")
 
         outcome = self._classify(store, victim_trace, ranked_top_id)
 

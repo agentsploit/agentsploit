@@ -59,7 +59,7 @@ class Authorization(BaseModel):
         p = Path(path).resolve()
         data = self.model_dump(mode="json")
         text = yaml.safe_dump(data, sort_keys=False, default_flow_style=False)
-        p.write_text(text)
+        p.write_text(text, encoding="utf-8")
         self._source_path = p
         self._source_hash = hashlib.sha256(text.encode()).hexdigest()
 
