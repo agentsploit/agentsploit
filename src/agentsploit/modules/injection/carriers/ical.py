@@ -1,4 +1,4 @@
-"""iCalendar carrier — .ics calendar invite with payload in DESCRIPTION/SUMMARY.
+"""iCalendar carrier - .ics calendar invite with payload in DESCRIPTION/SUMMARY.
 
 Agents that watch a user's calendar (assistants, scheduling bots) ingest
 event descriptions as untrusted content. We craft a minimal valid VEVENT

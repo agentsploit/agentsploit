@@ -1,4 +1,4 @@
-"""Carriers — embed a payload in a transport format (text, markdown, html, pdf, email, ical)."""
+"""Carriers - embed a payload in a transport format (text, markdown, html, pdf, email, ical)."""
 
 from agentsploit.modules.injection.carriers.base import Carrier, CarrierOutput
 from agentsploit.modules.injection.carriers.email import EmailCarrier

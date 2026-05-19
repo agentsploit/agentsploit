@@ -34,7 +34,7 @@ AgentSploit is a plugin-based framework for testing AI agents and MCP servers. T
 
 | Class | Role |
 |---|---|
-| `Module` | Abstract base — every attack capability is a subclass; `run()` yields findings |
+| `Module` | Abstract base - every attack capability is a subclass; `run()` yields findings |
 | `ModuleMeta` | Static metadata (name, category, references, supported target types) |
 | `Target` | Parsed URI + inferred `TargetType` |
 | `Authorization` | YAML-loaded engagement scope; enforced via `check()` before every scan |
@@ -58,7 +58,7 @@ The source file's SHA-256 is recorded in every finding's evidence for audit trac
 
 `Registry.discover()` walks `agentsploit.modules.*` with `pkgutil.walk_packages` and imports every submodule. Each `Module` subclass calls `registry.register(cls)` in `__init_subclass__`, so importing is registration. This means:
 
-- Third-party modules work — install a package that drops files into the namespace and they appear in `list-modules`.
+- Third-party modules work - install a package that drops files into the namespace and they appear in `list-modules`.
 - No central registry file to maintain.
 
 ## Module categories
@@ -72,7 +72,7 @@ The source file's SHA-256 is recorded in every finding's evidence for audit trac
 
 ## The injection generator
 
-The payload generator does not implement `Module` directly because it's compositional — it's a (technique × carrier) factory invoked from `agentsploit generate injection`. Future versions may expose a `Module` wrapper for batch generation against a finding feed.
+The payload generator does not implement `Module` directly because it's compositional - it's a (technique × carrier) factory invoked from `agentsploit generate injection`. Future versions may expose a `Module` wrapper for batch generation against a finding feed.
 
 ```
 InjectionContext (goal, canary)
@@ -91,9 +91,9 @@ The canary is the load-bearing observability primitive: a unique, random marker 
 
 ## Output formats
 
-- **Rich console** — interactive use, severity-coloured table.
-- **JSON** — structured, machine-readable; matches `Finding.model_dump()` shape.
-- **SARIF 2.1.0** — code-scanning standard; consumable by GitHub Code Scanning, Defender for Cloud, etc.
+- **Rich console** - interactive use, severity-coloured table.
+- **JSON** - structured, machine-readable; matches `Finding.model_dump()` shape.
+- **SARIF 2.1.0** - code-scanning standard; consumable by GitHub Code Scanning, Defender for Cloud, etc.
 
 ## Extension points
 
@@ -102,5 +102,5 @@ The canary is the load-bearing observability primitive: a unique, random marker 
 | A new MCP check | `src/agentsploit/modules/mcp/checks/<name>.py` + register in `checks/__init__.py:ALL_CHECKS` |
 | A new injection technique | `src/agentsploit/modules/injection/techniques/<name>.py` + register in `techniques/__init__.py:ALL_TECHNIQUES` |
 | A new carrier | `src/agentsploit/modules/injection/carriers/<name>.py` + register in `carriers/__init__.py:ALL_CARRIERS` |
-| A new top-level module (e.g. permission-graph mapper) | `src/agentsploit/modules/<name>/` — subclass `Module`, set `META`, implement `run()` |
+| A new top-level module (e.g. permission-graph mapper) | `src/agentsploit/modules/<name>/` - subclass `Module`, set `META`, implement `run()` |
 | A new transport | `src/agentsploit/modules/mcp/client.py` + new `TargetType` value |

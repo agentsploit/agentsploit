@@ -1,4 +1,4 @@
-"""Authorization model — runtime-enforced engagement scope."""
+"""Authorization model - runtime-enforced engagement scope."""
 
 from __future__ import annotations
 

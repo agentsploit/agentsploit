@@ -1,4 +1,4 @@
-"""Engagement session — groups findings with the authorization that produced them."""
+"""Engagement session - groups findings with the authorization that produced them."""
 
 from __future__ import annotations
 

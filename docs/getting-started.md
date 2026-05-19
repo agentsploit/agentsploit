@@ -5,7 +5,7 @@ A 10-minute tour of AgentSploit. By the end you'll have run every major capabili
 ## Install
 
 ```bash
-# Recommended — installs the `agentsploit` CLI globally without polluting your env
+# Recommended - installs the `agentsploit` CLI globally without polluting your env
 uv tool install agentsploit
 
 # Or via pipx
@@ -70,7 +70,7 @@ agentsploit run injection \
   --agent ./examples/agent-mock.yaml --training
 ```
 
-The mock agent reads the PDF, sees the hidden instruction, and emits the canary — `HIGH` confirmed prompt-injection finding.
+The mock agent reads the PDF, sees the hidden instruction, and emits the canary - `HIGH` confirmed prompt-injection finding.
 
 ### 4. Map cross-server permission graph
 
@@ -97,7 +97,7 @@ agentsploit verify path \
   --training
 ```
 
-`CRITICAL` confirmed exploitable path — the canary surfaces in the sink tool's call arguments.
+`CRITICAL` confirmed exploitable path - the canary surfaces in the sink tool's call arguments.
 
 ### 6. Batch-verify every path
 
@@ -134,7 +134,7 @@ Two-phase attack: attacker plants a poisoned note in shared storage, victim agen
 
 ## Going from fixtures to real targets
 
-Once you've completed the tour, the real workflow is identical — you just need two extra things:
+Once you've completed the tour, the real workflow is identical - you just need two extra things:
 
 1. **An authorization YAML** scoping which targets you're allowed to test. Generate with `agentsploit init-auth`. See [AUTHORIZATION.md](../AUTHORIZATION.md).
 2. **An agent config YAML** for whichever LLM provider you're testing. See [examples/agent-anthropic.yaml](../examples/agent-anthropic.yaml), [examples/agent-openai.yaml](../examples/agent-openai.yaml), or [examples/agent-http.yaml](../examples/agent-http.yaml).

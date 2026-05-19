@@ -1,4 +1,4 @@
-"""Email carrier — RFC 5322 message with HTML body, hidden Subject preview, custom headers."""
+"""Email carrier - RFC 5322 message with HTML body, hidden Subject preview, custom headers."""
 
 from __future__ import annotations
 

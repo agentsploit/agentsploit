@@ -1,4 +1,4 @@
-"""InjectionRunner — module that drives a payload through an agent and reports findings."""
+"""InjectionRunner - module that drives a payload through an agent and reports findings."""
 
 from __future__ import annotations
 
@@ -122,7 +122,7 @@ class InjectionRunner(Module):
                 check="runner/no_surface",
                 target=target.uri,
                 severity=Severity.INFO,
-                title="No canary surface — agent did not echo injection",
+                title="No canary surface - agent did not echo injection",
                 description=(
                     f"Drove the payload through {self.config.provider}/{self.config.model} "
                     f"but the canary {self.canary!r} did not appear in the agent's outputs, "

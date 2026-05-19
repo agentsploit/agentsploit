@@ -1,4 +1,4 @@
-"""InjectionGenerator — composes techniques with carriers to produce labeled artifacts."""
+"""InjectionGenerator - composes techniques with carriers to produce labeled artifacts."""
 
 from __future__ import annotations
 

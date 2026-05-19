@@ -1,4 +1,4 @@
-"""Direct technique — straightforward override attempt."""
+"""Direct technique - straightforward override attempt."""
 
 from __future__ import annotations
 

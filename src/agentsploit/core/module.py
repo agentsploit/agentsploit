@@ -1,4 +1,4 @@
-"""Module base class — every attack capability inherits from this."""
+"""Module base class - every attack capability inherits from this."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class Category(StrEnum):
-    """Module categories — mirrors Metasploit's aux/exploit/payload split."""
+    """Module categories - mirrors Metasploit's aux/exploit/payload split."""
 
     SCANNER = "scanner"
     PAYLOAD = "payload"

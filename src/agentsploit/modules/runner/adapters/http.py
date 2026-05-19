@@ -1,4 +1,4 @@
-"""GenericHTTPAdapter — POST to a custom agent endpoint with an OpenAI-shaped contract.
+"""GenericHTTPAdapter - POST to a custom agent endpoint with an OpenAI-shaped contract.
 
 Many in-house production agents wrap an LLM behind a custom HTTP endpoint.
 Their exact request/response shape varies, but the most common convention

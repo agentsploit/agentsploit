@@ -1,7 +1,7 @@
 """OpenAIAdapter unit tests.
 
 Stubs out the openai client by patching AsyncOpenAI's underlying httpx client
-with a MockTransport — same approach as the HTTP adapter tests.
+with a MockTransport - same approach as the HTTP adapter tests.
 """
 
 from __future__ import annotations

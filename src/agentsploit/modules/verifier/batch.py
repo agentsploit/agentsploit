@@ -1,4 +1,4 @@
-"""BatchPathVerifier — run PathVerifier across every interesting path in a graph.
+"""BatchPathVerifier - run PathVerifier across every interesting path in a graph.
 
 Concurrency-controlled, deduplicated by (source, sink), and emits both per-
 path findings and an aggregate summary. Useful when you have a freshly-built
@@ -217,7 +217,7 @@ class BatchPathVerifier(Module):
 
 
 def _dedupe_by_endpoints(paths: list[Path]) -> list[Path]:
-    """Keep one path per (source.id, sink.id) pair — the shortest by edge count,
+    """Keep one path per (source.id, sink.id) pair - the shortest by edge count,
     then by total weight."""
     best: dict[tuple[str, str], Path] = {}
     for p in paths:

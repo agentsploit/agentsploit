@@ -1,4 +1,4 @@
-"""Live agent runner — drives generated payloads through real LLM agents and
+"""Live agent runner - drives generated payloads through real LLM agents and
 detects canary surface to confirm exploitation.
 
 Pipeline:

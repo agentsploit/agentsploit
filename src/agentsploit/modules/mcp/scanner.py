@@ -1,4 +1,4 @@
-"""MCP Scanner — connects to an MCP server, enumerates it, runs checks + probes."""
+"""MCP Scanner - connects to an MCP server, enumerates it, runs checks + probes."""
 
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ class MCPScanner(Module):
                 remediation="Verify the target URI and that the server is reachable.",
                 tags=["mcp", "transport-error"],
             )
-            # We can still run HTTP probes even if MCP enumeration failed —
+            # We can still run HTTP probes even if MCP enumeration failed -
             # for example, the server might require auth that we lack, but
             # be open on HTTP-level controls. Continue to probes.
 
@@ -87,7 +87,7 @@ class MCPScanner(Module):
                     f"and {len(inv.prompts)} prompts on the target MCP server."
                 ),
                 remediation=(
-                    "Informational — review the inventory and confirm it matches "
+                    "Informational - review the inventory and confirm it matches "
                     "the expected surface."
                 ),
                 tags=["mcp", "inventory"],

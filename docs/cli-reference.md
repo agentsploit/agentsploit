@@ -30,7 +30,7 @@ agentsploit [--verbose|-v] <subcommand> ...
 | Flag | Where | Effect |
 |---|---|---|
 | `--verbose`, `-v` | top-level | Verbose structured logging to stderr |
-| `--training` | scan / run / map / verify / poison | Use restricted training-mode auth (bundled fixtures + localhost only) — no `--auth` file required |
+| `--training` | scan / run / map / verify / poison | Use restricted training-mode auth (bundled fixtures + localhost only) - no `--auth` file required |
 | `--auth <path>` | scan / run / map / verify / poison | Authorization YAML defining engagement scope |
 | `--format`, `-f` | scan / run / map build / verify / poison | `rich` \| `json` \| `sarif` |
 | `--out`, `-o` | (with `--format json|sarif`) | Required output path |
@@ -180,6 +180,6 @@ agentsploit poison verify \
 |---|---|
 | 0 | No CRITICAL/HIGH findings |
 | 1 | At least one CRITICAL/HIGH finding (or operational error) |
-| 2 | Authorization denied — target out of scope |
+| 2 | Authorization denied - target out of scope |
 
 Use exit codes to gate CI/CD pipelines.

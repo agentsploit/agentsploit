@@ -15,7 +15,7 @@ endpoint: https://agent.staging.example.com/v1/chat
 # Bearer token sent as Authorization: Bearer <value>.
 api_key_env: STAGING_AGENT_TOKEN
 
-# Extra headers (multi-tenant, request IDs, etc.) — repeatable.
+# Extra headers (multi-tenant, request IDs, etc.) - repeatable.
 headers:
   X-Tenant: acme
   X-Request-Source: agentsploit-engagement

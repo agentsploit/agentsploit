@@ -1,4 +1,4 @@
-# Mock agent configuration — fully deterministic, no API key required.
+# Mock agent configuration - fully deterministic, no API key required.
 # Use for testing the runner pipeline end-to-end without burning tokens.
 
 provider: mock

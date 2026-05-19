@@ -1,4 +1,4 @@
-"""HTML carrier — embeds payload in visible and hidden DOM nodes.
+"""HTML carrier - embeds payload in visible and hidden DOM nodes.
 
 A web page that an agent crawls will tokenize all visible text plus often
 attributes like `alt`, `title`, and `aria-label`. We place the payload in

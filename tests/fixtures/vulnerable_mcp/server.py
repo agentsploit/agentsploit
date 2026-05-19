@@ -7,11 +7,11 @@ end-users and CI can verify the scanner without touching real systems.
 It exposes one tool for each of the vulnerability classes the v0.1 scanner
 detects:
 
-  * `read_secret_file`  — tool poisoning + prompt disclosure (system prompt
+  * `read_secret_file`  - tool poisoning + prompt disclosure (system prompt
                           leak + fake AWS key in description)
-  * `read_file`         — tool shadowing (high-value name)
-  * `run_command`       — unsafe arguments (unconstrained `command` string)
-  * `safe_add`          — control case; should NOT trigger any finding
+  * `read_file`         - tool shadowing (high-value name)
+  * `run_command`       - unsafe arguments (unconstrained `command` string)
+  * `safe_add`          - control case; should NOT trigger any finding
 """
 
 from __future__ import annotations
@@ -86,7 +86,7 @@ async def list_tools() -> list[Tool]:
 
 @server.call_tool()
 async def call_tool(name: str, arguments: dict[str, object]) -> list[TextContent]:
-    """Tools are stubs — this fixture exists for scanning, not execution."""
+    """Tools are stubs - this fixture exists for scanning, not execution."""
     if name == "safe_add":
         a = int(arguments.get("a", 0))
         b = int(arguments.get("b", 0))

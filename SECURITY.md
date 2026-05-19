@@ -16,7 +16,7 @@ A vulnerability in AgentSploit (the framework, not a target it scans) means: a w
 **Report privately** via:
 
 - **GitHub Security Advisories** (preferred): https://github.com/desledishant10/agentsploit/security/advisories/new
-- **Email**: security@agentsploit.dev (PGP key in [`docs/pgp-public-key.asc`](docs/pgp-public-key.asc) — TODO before 1.1)
+- **Email**: security@agentsploit.dev (PGP key in [`docs/pgp-public-key.asc`](docs/pgp-public-key.asc) - TODO before 1.1)
 
 Please include:
 
@@ -48,7 +48,7 @@ Recommended timeline (modeled on Google Project Zero and CERT/CC):
 3. Coordinate the disclosure date with the vendor
 4. Publish a write-up only after the vendor has shipped a fix or the deadline has passed
 
-AgentSploit's own bundled fixtures (`tests/fixtures/vulnerable_mcp/`, etc.) are intentionally vulnerable for testing — findings against them do not warrant disclosure.
+AgentSploit's own bundled fixtures (`tests/fixtures/vulnerable_mcp/`, etc.) are intentionally vulnerable for testing - findings against them do not warrant disclosure.
 
 ## Out of scope
 
@@ -57,10 +57,10 @@ The following are explicitly out of scope for AgentSploit's vulnerability disclo
 - Findings produced by running AgentSploit against itself or its bundled vulnerable fixtures (intentional)
 - Anything that requires the operator to disable the authorisation check (`Authorization.check()`)
 - Anything that requires running AgentSploit with elevated/root privileges
-- Issues in transitive dependencies — report those upstream
+- Issues in transitive dependencies - report those upstream
 - Theoretical issues without a reproduction
-- Findings against models / providers (Claude, OpenAI, etc.) — report those to the respective provider
+- Findings against models / providers (Claude, OpenAI, etc.) - report those to the respective provider
 
 ## Hall of fame
 
-Reporters credited in security advisories are listed here. (None yet — first reporter gets the top spot.)
+Reporters credited in security advisories are listed here. (None yet - first reporter gets the top spot.)

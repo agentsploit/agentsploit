@@ -1,4 +1,4 @@
-"""Module registry — modules self-register on import via Module.__init_subclass__."""
+"""Module registry - modules self-register on import via Module.__init_subclass__."""
 
 from __future__ import annotations
 

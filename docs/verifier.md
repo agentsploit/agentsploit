@@ -2,7 +2,7 @@
 
 The verifier closes the loop on the v0.4 mapper. The mapper produces *hypothetical* attack paths from heuristic edge inference; the verifier drives a chosen path through a real (or mock) agent and reports whether the chain actually completes.
 
-The combination — **inference, then execution** — is what BloodHound has for Active Directory and what AgentSploit now has for agent ecosystems.
+The combination - **inference, then execution** - is what BloodHound has for Active Directory and what AgentSploit now has for agent ecosystems.
 
 ## What "confirmed" means
 
@@ -42,7 +42,7 @@ agentsploit verify path \
   --auth ./authorization.yaml
 ```
 
-If `--agent` is omitted, the verifier uses the bundled mock adapter — useful for testing the framework's plumbing without burning real LLM tokens.
+If `--agent` is omitted, the verifier uses the bundled mock adapter - useful for testing the framework's plumbing without burning real LLM tokens.
 
 ## How a single verification works
 
@@ -51,7 +51,7 @@ If `--agent` is omitted, the verifier uses the bundled mock adapter — useful f
 2. **Pick a canary argument.** Default selection prefers `body`, `message`,
    `content`, `command`, then the first required string-typed arg on the
    sink's input schema. Override with `--sink-arg`.
-3. **Craft a path-targeted payload** using `PathVerifyTechnique` — wrapped
+3. **Craft a path-targeted payload** using `PathVerifyTechnique` - wrapped
    in a role-confusion envelope, with the sink's required arguments pre-
    scaffolded so the agent doesn't refuse the call for missing args.
 4. **Synthesise a `RunnerConfig`** with the path's source as the payload-
@@ -59,7 +59,7 @@ If `--agent` is omitted, the verifier uses the bundled mock adapter — useful f
    mock tools.
 5. **Drive the agent** through the chain.
 6. **Scope-detect the canary.** The `TOOL_CALL_ARGS` surface only fires
-   when the canary appears in a call to the path's actual sink — that's
+   when the canary appears in a call to the path's actual sink - that's
    the proof, not just "agent said something interesting."
 
 ## Pairing with the mock agent
@@ -74,13 +74,13 @@ This makes the mock agent a faithful test fixture for path completion *without* 
 
 ## Pairing with real adapters
 
-`agent-anthropic.yaml` works as-is — the verifier just overrides the `mock_tools` and `trigger_prompt` fields from the path. Same for any future adapter.
+`agent-anthropic.yaml` works as-is - the verifier just overrides the `mock_tools` and `trigger_prompt` fields from the path. Same for any future adapter.
 
 ## Operational hygiene
 
 - **Use a fresh canary per run.** The verifier generates one automatically; don't try to reuse one across paths.
 - **`max_turns` matters.** Real models sometimes need multiple turns to traverse a chain. The default is 6; raise it for complex paths.
-- **Trace artifacts are gold.** Every verify run persists a JSON trace to `engagements/<id>/<sid>/verify-trace-<canary>.json`. Read it when triaging unexpected `PARTIAL` results — it shows exactly what the agent saw and what it did.
+- **Trace artifacts are gold.** Every verify run persists a JSON trace to `engagements/<id>/<sid>/verify-trace-<canary>.json`. Read it when triaging unexpected `PARTIAL` results - it shows exactly what the agent saw and what it did.
 - **Authorization is enforced.** The verifier's target URI is derived from the agent config (`agent+anthropic://<model>` or `agent+mock://mock-1`). Your engagement YAML must allow it.
 
 ## Batch verification: `verify all-paths` (v0.6)
@@ -98,11 +98,11 @@ agentsploit verify all-paths \
 
 Behaviour:
 
-- **Dedupes** by `(source, sink)` pair — one verification per endpoint pair, shortest path wins
-- **Parallelises** up to `--parallel` (default 2) — respect LLM rate limits
+- **Dedupes** by `(source, sink)` pair - one verification per endpoint pair, shortest path wins
+- **Parallelises** up to `--parallel` (default 2) - respect LLM rate limits
 - **Caps** with `--max-paths` to bound LLM cost on large graphs
-- **Isolates errors** — one failed verification doesn't kill the batch
-- **Aggregates** — emits one summary finding with confirmed / partial / failed counts and a confirmation-rate percentage
+- **Isolates errors** - one failed verification doesn't kill the batch
+- **Aggregates** - emits one summary finding with confirmed / partial / failed counts and a confirmation-rate percentage
 
 The summary finding is CRITICAL if any path was confirmed, INFO otherwise. Each per-path verification still emits its own finding so you can triage them individually.
 
@@ -124,10 +124,10 @@ The mock pass is essentially free; use it as a pre-filter before spending tokens
 
 ## Technique fuzzing (v0.7)
 
-The default verifier uses one targeted injection envelope: `role_confusion`. v0.7 adds four more — `direct`, `delimiter`, `unicode_tag`, `tool_smuggling` — and a fuzzer that tries them in sequence until one lands.
+The default verifier uses one targeted injection envelope: `role_confusion`. v0.7 adds four more - `direct`, `delimiter`, `unicode_tag`, `tool_smuggling` - and a fuzzer that tries them in sequence until one lands.
 
 ```bash
-# Single-path fuzz — try every technique against one (source, sink) pair
+# Single-path fuzz - try every technique against one (source, sink) pair
 agentsploit verify fuzz-path \
   --graph ./engagements/<id>/<sid>/permission_graph.json \
   --from read_file \
@@ -148,7 +148,7 @@ agentsploit verify fuzz-path \
   --no-early-stop \
   --agent ./agent-anthropic.yaml --auth ./auth.yaml
 
-# Batch fuzz — every path × every technique
+# Batch fuzz - every path × every technique
 agentsploit verify all-paths \
   --graph ... \
   --fuzz \
@@ -174,5 +174,5 @@ Ordered roughly by historical effectiveness against modern models: role-confusio
 ## What the verifier is not
 
 - **Not a fuzzer (yet).** Each verification tests one technique against one path. Technique fuzzing across paths is a future direction.
-- **Not a defence assessment.** A FAILED outcome does not mean the agent is safe — only that *this* payload didn't land. Try other techniques (`unicode_tag`, `delimiter`), other system prompts, other models.
-- **Not authorised to act on third-party agents.** Same rules as the rest of AgentSploit — own the target or have written authorization. See [AUTHORIZATION.md](../AUTHORIZATION.md).
+- **Not a defence assessment.** A FAILED outcome does not mean the agent is safe - only that *this* payload didn't land. Try other techniques (`unicode_tag`, `delimiter`), other system prompts, other models.
+- **Not authorised to act on third-party agents.** Same rules as the rest of AgentSploit - own the target or have written authorization. See [AUTHORIZATION.md](../AUTHORIZATION.md).

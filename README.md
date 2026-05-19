@@ -12,7 +12,7 @@ AgentSploit is a Burp Suite / Metasploit-style framework purpose-built for the a
 > [!IMPORTANT]
 > **AgentSploit is an authorized-use security testing tool.** You must have explicit written permission to scan any target you do not own. See [AUTHORIZATION.md](AUTHORIZATION.md) before running anything.
 
-**👉 New here? Start with [docs/getting-started.md](docs/getting-started.md) — a 10-minute tour of every capability against bundled fixtures, no API keys needed.**
+**👉 New here? Start with [docs/getting-started.md](docs/getting-started.md) - a 10-minute tour of every capability against bundled fixtures, no API keys needed.**
 
 ---
 
@@ -20,8 +20,8 @@ AgentSploit is a Burp Suite / Metasploit-style framework purpose-built for the a
 
 Every Fortune 500 is shipping LLM agents and MCP servers in 2026. The attack surface is genuinely new:
 
-- Tool descriptions are LLM-readable instructions — malicious ones can hijack agents.
-- Agents fetch untrusted content from PDFs, web pages, calendar invites, tickets — and that content can issue commands.
+- Tool descriptions are LLM-readable instructions - malicious ones can hijack agents.
+- Agents fetch untrusted content from PDFs, web pages, calendar invites, tickets - and that content can issue commands.
 - Chained tool calls create privilege escalation paths that no traditional permission model captures.
 - Memory and context windows can be poisoned across sessions.
 
@@ -59,35 +59,35 @@ Generates labeled payloads for testing whether an agent processes untrusted cont
 
 **Techniques:**
 
-- `direct` — straightforward override attempts
-- `role_confusion` — fake `system:` / `assistant:` turns
-- `delimiter` — fenced-content escape and re-context
-- `unicode_tag` — invisible Unicode tag-block smuggling (U+E0000 range)
-- `tool_smuggling` — hidden tool-call invocations in narrative text
+- `direct` - straightforward override attempts
+- `role_confusion` - fake `system:` / `assistant:` turns
+- `delimiter` - fenced-content escape and re-context
+- `unicode_tag` - invisible Unicode tag-block smuggling (U+E0000 range)
+- `tool_smuggling` - hidden tool-call invocations in narrative text
 
 **Carriers (output formats):**
 
-- `text` — plain text
-- `markdown` — README/comment-style
-- `html` — page content with hidden elements
-- `pdf` — visible + hidden-layer PDF
-- `email` — RFC 5322 with HTML body and headers
-- `ical` — `.ics` calendar invite with malicious DESCRIPTION
+- `text` - plain text
+- `markdown` - README/comment-style
+- `html` - page content with hidden elements
+- `pdf` - visible + hidden-layer PDF
+- `email` - RFC 5322 with HTML body and headers
+- `ical` - `.ics` calendar invite with malicious DESCRIPTION
 
 Every payload is tagged with a `canary` string so you can detect successful injection in logs.
 
 ### 3. Live Agent Runner (v0.3)
 
-Takes a generated payload + an agent config and drives the payload through a real LLM. If the canary surfaces in the agent's response, tool calls, or thinking trace, the injection is **confirmed exploitable** — a CRITICAL/HIGH finding with the full trace persisted for audit.
+Takes a generated payload + an agent config and drives the payload through a real LLM. If the canary surfaces in the agent's response, tool calls, or thinking trace, the injection is **confirmed exploitable** - a CRITICAL/HIGH finding with the full trace persisted for audit.
 
 | Surface | Severity | Meaning |
 |---|---|---|
-| `canary_tool_call_args` | CRITICAL | Agent forwarded the canary into a tool — confirmed exfil capability |
-| `canary_response_text` | HIGH | Agent quoted the canary back — confirmed instruction-following |
+| `canary_tool_call_args` | CRITICAL | Agent forwarded the canary into a tool - confirmed exfil capability |
+| `canary_response_text` | HIGH | Agent quoted the canary back - confirmed instruction-following |
 | `canary_thinking` | MEDIUM | Canary appeared in extended-thinking but the agent didn't act on it |
 | `no_surface` | INFO | Payload drove cleanly through but didn't land |
 
-**Adapters (v0.9):** `anthropic` (real Claude tool-use), `openai` (Chat Completions with tool use), `http` (generic HTTP agent with OpenAI-shaped contract — subclass for custom shapes), `mock` (deterministic, for tests). See [docs/runner.md](docs/runner.md).
+**Adapters (v0.9):** `anthropic` (real Claude tool-use), `openai` (Chat Completions with tool use), `http` (generic HTTP agent with OpenAI-shaped contract - subclass for custom shapes), `mock` (deterministic, for tests). See [docs/runner.md](docs/runner.md).
 
 ### 4. Permission Graph Mapper (v0.4)
 
@@ -104,7 +104,7 @@ agentsploit map export --graph ./engagements/<id>/<sid>/permission_graph.json -f
 | `MUTATION` (`git_push`, `delete_*`) | HIGH |
 | `EGRESS` (`send_email`, `webhook`) | HIGH |
 
-A path finding is a *testable hypothesis* — pair it with the v0.5 verifier to confirm exploitability end-to-end. See [docs/mapper.md](docs/mapper.md).
+A path finding is a *testable hypothesis* - pair it with the v0.5 verifier to confirm exploitability end-to-end. See [docs/mapper.md](docs/mapper.md).
 
 ### 5. Path Verifier (v0.5)
 
@@ -127,7 +127,7 @@ A CONFIRMED finding moves a mapper hypothesis from "plausible attack path" to "p
 
 ### 6. Batch Path Verification (v0.6)
 
-Drive the verifier across every path in a graph in one command — typical workflow is to triage against the cheap mock agent first, then re-run only the confirmations against the real model.
+Drive the verifier across every path in a graph in one command - typical workflow is to triage against the cheap mock agent first, then re-run only the confirmations against the real model.
 
 ```bash
 # Cheap triage pass (free, instant)
@@ -143,14 +143,14 @@ Deduplicates by `(source, sink)` pair, parallelises with rate-limit-aware concur
 
 ### 7. Technique Fuzzing (v0.7)
 
-The default verifier uses one injection envelope (`role_confusion`). v0.7 adds four more — `direct`, `delimiter`, `unicode_tag`, `tool_smuggling` — and a fuzzer that tries them in sequence until one lands. Knowing *which* envelope wins tells defenders what their injection filter missed.
+The default verifier uses one injection envelope (`role_confusion`). v0.7 adds four more - `direct`, `delimiter`, `unicode_tag`, `tool_smuggling` - and a fuzzer that tries them in sequence until one lands. Knowing *which* envelope wins tells defenders what their injection filter missed.
 
 ```bash
 # Single-path fuzz
 agentsploit verify fuzz-path --graph ./.../permission_graph.json \
   --from read_file --to send_email --training
 
-# Batch fuzz — every path × every technique, with early termination per path
+# Batch fuzz - every path × every technique, with early termination per path
 agentsploit verify all-paths --graph ./.../permission_graph.json \
   --fuzz --techniques role_confusion,delimiter,unicode_tag \
   --parallel 3 --training
@@ -191,6 +191,27 @@ agentsploit poison verify \
 | `NOT_STORED` | Attacker write failed | INFO |
 
 See [docs/poisoning.md](docs/poisoning.md).
+
+### 9. RAG / Vector-Store Poisoning (v1.1)
+
+The same threat model as v0.8 but lifted to the retrieval-augmented-generation case. Attacker doesn't know the victim's query key, only the *topic*. Indexes a poisoned doc that outranks legitimate corpus content for the target query; victim agent runs `semantic_search`, retrieves the top-ranked match, follows the embedded chain.
+
+```bash
+agentsploit poison verify-rag \
+  --sink-tool send_email --sink-arg body \
+  --sink-privilege egress \
+  --query "how do I reset my password" \
+  --training
+```
+
+| Outcome | Meaning | Severity |
+|---|---|---|
+| `CONFIRMED` | Poisoned doc ranked first, victim called sink with canary | Tied to sink privilege |
+| `PARTIAL` | Doc retrieved but canary didn't land in sink | HIGH |
+| `NOT_RETRIEVED` | Poisoned doc didn't outrank decoys (retriever failure) | INFO |
+| `NOT_STORED` | Indexing failed (setup issue) | INFO |
+
+The retrieval-failure vs obedience-failure split is the key actionable distinction the RAG variant adds. See [docs/poisoning.md#rag--vector-store-poisoning-v11](docs/poisoning.md#rag--vector-store-poisoning-v11).
 
 ## Install
 
@@ -260,7 +281,7 @@ See [AUTHORIZATION.md](AUTHORIZATION.md) and [SECURITY.md](SECURITY.md).
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). New modules are welcome — start from `docs/writing-modules.md`.
+See [CONTRIBUTING.md](CONTRIBUTING.md). New modules are welcome - start from `docs/writing-modules.md`.
 
 ## License
 

@@ -1,4 +1,4 @@
-"""OpenAIAdapter — drives OpenAI Chat Completions with tool use.
+"""OpenAIAdapter - drives OpenAI Chat Completions with tool use.
 
 Loops until the agent stops calling tools or hits `max_turns`.
 """
@@ -101,7 +101,7 @@ class OpenAIAdapter(AgentAdapter):
                     if func is None:
                         continue
 
-                    # OpenAI sends arguments as a JSON string — parse it
+                    # OpenAI sends arguments as a JSON string - parse it
                     raw_args = func.arguments or "{}"
                     try:
                         args = json.loads(raw_args)

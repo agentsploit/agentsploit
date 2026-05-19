@@ -1,4 +1,4 @@
-"""RunTrace — the full conversation captured during a runner invocation.
+"""RunTrace - the full conversation captured during a runner invocation.
 
 Adapter-agnostic: every adapter normalises its provider's transcript shape
 into these types so the canary detector and reporter don't need to care.
@@ -37,7 +37,7 @@ class ToolResult(BaseModel):
 
 
 class AssistantMessage(BaseModel):
-    """A single assistant turn — text response + zero or more tool calls."""
+    """A single assistant turn - text response + zero or more tool calls."""
 
     role: Literal["assistant"] = "assistant"
     text: str = ""

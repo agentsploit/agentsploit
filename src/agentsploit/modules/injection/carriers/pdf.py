@@ -1,4 +1,4 @@
-"""PDF carrier — visible cover text + a low-contrast hidden injection layer.
+"""PDF carrier - visible cover text + a low-contrast hidden injection layer.
 
 Agents that OCR or text-extract PDFs typically don't filter by color or
 font size, so we place the payload in white-on-white tiny text at the bottom.

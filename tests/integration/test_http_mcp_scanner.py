@@ -1,4 +1,4 @@
-"""Integration test — boot the vulnerable HTTP MCP fixture, scan it, verify findings."""
+"""Integration test - boot the vulnerable HTTP MCP fixture, scan it, verify findings."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def _running_fixture() -> Iterator[str]:
     thread = _ServerThread(port)
     thread.start()
 
-    # Poll until the server accepts TCP — uvicorn boot is asynchronous.
+    # Poll until the server accepts TCP - uvicorn boot is asynchronous.
     deadline = 5.0
     step = 0.05
     waited = 0.0
@@ -115,7 +115,7 @@ async def test_scanner_against_vulnerable_http_fixture(
 
 
 async def test_fixture_serves_unauthenticated_initialize(running_http_fixture: str) -> None:
-    """Sanity check: the fixture really does accept unauth — without this the
+    """Sanity check: the fixture really does accept unauth - without this the
     auth-bypass assertion above is meaningless."""
     payload = {
         "jsonrpc": "2.0",

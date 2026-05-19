@@ -1,4 +1,4 @@
-"""Output reporters — turn a session's findings into JSON, SARIF, or Rich console output."""
+"""Output reporters - turn a session's findings into JSON, SARIF, or Rich console output."""
 
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ class RichReporter(Reporter):
             )
             return
 
-        table = Table(title=f"Findings — {session.authorization.engagement_id} / {session.id}")
+        table = Table(title=f"Findings - {session.authorization.engagement_id} / {session.id}")
         table.add_column("Sev", justify="center")
         table.add_column("Module")
         table.add_column("Check")

@@ -1,6 +1,6 @@
 """Synthesise a RunnerConfig from a graph Path + base agent settings.
 
-The verifier doesn't ask the operator to hand-write a config for every path —
+The verifier doesn't ask the operator to hand-write a config for every path -
 that would defeat the point of "auto-verify". Instead, the operator provides
 a *base* config (provider, model, api_key_env, system prompt, max_turns,
 timeout) and the synthesiser fills in the path-specific bits:

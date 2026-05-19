@@ -1,4 +1,4 @@
-"""Role confusion technique — fake conversation turns to confuse the chat template."""
+"""Role confusion technique - fake conversation turns to confuse the chat template."""
 
 from __future__ import annotations
 

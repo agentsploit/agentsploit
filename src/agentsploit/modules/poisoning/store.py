@@ -1,4 +1,4 @@
-"""MemoryStore — the shared backing store between attacker and victim agent runs.
+"""MemoryStore - the shared backing store between attacker and victim agent runs.
 
 Abstract base + concrete in-memory note store. Future v0.9 will add a
 vector-store backend for RAG poisoning that exposes the same interface.
@@ -49,5 +49,5 @@ class InMemoryNoteStore(MemoryStore):
         return list(self._data.keys())
 
     def snapshot(self) -> dict[str, str]:
-        """Return a copy of the store contents — for evidence/audit."""
+        """Return a copy of the store contents - for evidence/audit."""
         return dict(self._data)

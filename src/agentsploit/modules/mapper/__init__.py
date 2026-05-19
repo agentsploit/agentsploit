@@ -1,4 +1,4 @@
-"""Permission graph mapper — BloodHound for tool chains.
+"""Permission graph mapper - BloodHound for tool chains.
 
 Enumerates tools across multiple MCP servers, classifies each by privilege
 class, infers edges where one tool's output could plausibly feed another's

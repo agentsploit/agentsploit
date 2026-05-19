@@ -1,4 +1,4 @@
-"""AgentSploit CLI — Typer-based entry point."""
+"""AgentSploit CLI - Typer-based entry point."""
 
 from __future__ import annotations
 
@@ -390,7 +390,7 @@ def run_injection(
     target_obj = Target.parse(target_uri)
     reporter = _resolve_reporter(out_format, out_path)
 
-    # Read payload — bytes for binary carriers (PDF), text otherwise
+    # Read payload - bytes for binary carriers (PDF), text otherwise
     raw = payload.read_bytes()
     try:
         payload_str = raw.decode("utf-8")
@@ -627,7 +627,7 @@ def verify_path(
         typer.Option(
             "--agent",
             "-a",
-            help="Agent YAML config (optional — defaults to a mock agent)",
+            help="Agent YAML config (optional - defaults to a mock agent)",
         ),
     ] = None,
     auth: Annotated[Path | None, typer.Option("--auth", help="Authorization YAML")] = None,
@@ -653,7 +653,7 @@ def verify_path(
     path = _resolve_path_in_graph(graph_file, from_tool, to_tool)
 
     # If the operator supplied an agent config, use it to set provider/model.
-    # Otherwise the verifier defaults to the mock agent — full self-test loop
+    # Otherwise the verifier defaults to the mock agent - full self-test loop
     # with no API keys.
     base_config: RunnerConfig | None = None
     if agent_config is not None:
@@ -705,7 +705,7 @@ def verify_all_paths(
         typer.Option(
             "--agent",
             "-a",
-            help="Agent YAML config (optional — defaults to a mock agent)",
+            help="Agent YAML config (optional - defaults to a mock agent)",
         ),
     ] = None,
     auth: Annotated[Path | None, typer.Option("--auth", help="Authorization YAML")] = None,
@@ -995,6 +995,107 @@ def poison_verify(
         asyncio.run(_run())
     except Exception as e:
         err_console.print(f"[red]Poison verification failed:[/red] {e}")
+        raise typer.Exit(code=1) from e
+
+    manifest = session.persist()
+    reporter.emit(session)
+    console.print(f"\nSession manifest: [dim]{manifest}[/dim]")
+
+    confirmed = any("poison-confirmed" in f.tags for f in session.findings)
+    raise typer.Exit(code=1 if confirmed else 0)
+
+
+@poison_app.command("verify-rag")
+def poison_verify_rag(
+    sink_tool: Annotated[
+        str,
+        typer.Option(
+            "--sink-tool",
+            help="Name of the sink tool the poisoned doc should steer the victim toward",
+        ),
+    ],
+    sink_arg: Annotated[
+        str, typer.Option("--sink-arg", help="Sink argument that should hold the canary")
+    ] = "body",
+    sink_privilege: Annotated[
+        str,
+        typer.Option(
+            "--sink-privilege",
+            help="Label used in finding remediation (egress|mutation|execution|...)",
+        ),
+    ] = "egress",
+    target_query: Annotated[
+        str,
+        typer.Option(
+            "--query",
+            help="The query string the victim agent will run against the vector store",
+        ),
+    ] = "how do I reset my password",
+    agent_config: Annotated[
+        Path | None,
+        typer.Option("--agent", "-a", help="Agent YAML config (defaults to mock)"),
+    ] = None,
+    auth: Annotated[Path | None, typer.Option("--auth", help="Authorization YAML")] = None,
+    training: Annotated[
+        bool, typer.Option("--training", help="Use restricted training-mode auth")
+    ] = False,
+    technique: Annotated[
+        str,
+        typer.Option(
+            "--technique",
+            help="Injection envelope: role_confusion|direct|delimiter|unicode_tag|tool_smuggling",
+        ),
+    ] = "role_confusion",
+    canary: Annotated[
+        str | None, typer.Option("--canary", help="Override canary (default: random)")
+    ] = None,
+    out_format: Annotated[str, typer.Option("--format", "-f", help="rich|json|sarif")] = "rich",
+    out_path: Annotated[
+        Path | None, typer.Option("--out", "-o", help="Output file (required for json/sarif)")
+    ] = None,
+) -> None:
+    """RAG poisoning: index a crafted doc in a vector store, force a semantic
+    search that retrieves it, confirm the victim agent obeys the embedded chain."""
+    from agentsploit.modules.poisoning.rag import RAGPoisoner
+    from agentsploit.modules.runner.config import RunnerConfig
+
+    base_config: RunnerConfig | None = None
+    if agent_config is not None:
+        try:
+            base_config = RunnerConfig.load(agent_config)
+        except Exception as e:
+            raise typer.BadParameter(f"Failed to load agent config: {e}") from e
+        target_uri = base_config.target_uri()
+    else:
+        target_uri = "agent+mock://mock-1"
+
+    authorization = _load_auth(auth, training, target_uri)
+    target_obj = Target.parse(target_uri)
+    reporter = _resolve_reporter(out_format, out_path)
+
+    try:
+        poisoner = RAGPoisoner(
+            sink_tool_name=sink_tool,
+            sink_arg_name=sink_arg,
+            sink_privilege_label=sink_privilege,
+            base_config=base_config,
+            technique=technique,
+            target_query=target_query,
+            canary=canary,
+        )
+    except ValueError as e:
+        raise typer.BadParameter(str(e)) from e
+
+    session = Session(authorization=authorization)
+
+    async def _run() -> None:
+        async for finding in poisoner.run(target_obj, session):
+            session.add(finding)
+
+    try:
+        asyncio.run(_run())
+    except Exception as e:
+        err_console.print(f"[red]RAG poison verification failed:[/red] {e}")
         raise typer.Exit(code=1) from e
 
     manifest = session.persist()

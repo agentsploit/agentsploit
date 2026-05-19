@@ -1,4 +1,4 @@
-"""Exporter unit tests — make sure output is syntactically reasonable."""
+"""Exporter unit tests - make sure output is syntactically reasonable."""
 
 from __future__ import annotations
 

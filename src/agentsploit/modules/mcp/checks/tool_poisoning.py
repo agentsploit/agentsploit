@@ -1,7 +1,7 @@
 """Tool poisoning check.
 
 Looks for MCP tool descriptions that contain text patterns associated with
-prompt injection — i.e. instructions that the host LLM might follow when it
+prompt injection - i.e. instructions that the host LLM might follow when it
 reads the tool list. Based on the "tool poisoning attack" class documented by
 Invariant Labs and others against MCP servers in 2025.
 """

@@ -2,7 +2,7 @@
 
 Two kinds of checks:
   - Check: synchronous, operates on the already-fetched MCPInventory.
-           Transport-agnostic — applies to stdio, HTTP, or SSE targets.
+           Transport-agnostic - applies to stdio, HTTP, or SSE targets.
   - Probe: asynchronous, opens its own connection to the target.
            Used for HTTP/SSE-only concerns (CORS, auth bypass, headers).
 """

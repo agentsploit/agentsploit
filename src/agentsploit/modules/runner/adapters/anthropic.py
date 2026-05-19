@@ -1,4 +1,4 @@
-"""AnthropicAdapter — runs the payload through a real Claude with native tool use."""
+"""AnthropicAdapter - runs the payload through a real Claude with native tool use."""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ class AnthropicAdapter(AgentAdapter):
             for t in config.mock_tools
         ]
 
-        # API conversation state — separate from the trace, which is normalised.
+        # API conversation state - separate from the trace, which is normalised.
         api_messages: list[dict[str, Any]] = [
             {"role": "user", "content": config.trigger_prompt},
         ]
@@ -129,7 +129,7 @@ class AnthropicAdapter(AgentAdapter):
             # If the agent isn't calling the payload tool at all, terminate early
             if payload_tool_name and not any(tc.name == payload_tool_name for tc in tool_calls):
                 # gave the model the prompt, it called other tools but never the
-                # payload-bearing one — that's still a valid trace, but no canary surface
+                # payload-bearing one - that's still a valid trace, but no canary surface
                 continue
 
         trace.finished_at = datetime.now(UTC)

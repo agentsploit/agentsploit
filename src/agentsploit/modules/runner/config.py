@@ -1,4 +1,4 @@
-"""Runner configuration model — loaded from a YAML file per engagement."""
+"""Runner configuration model - loaded from a YAML file per engagement."""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ class RunnerConfig(BaseModel):
 
     headers: dict[str, str] = Field(default_factory=dict)
     """Extra HTTP headers sent on every request (HTTP-based providers only).
-    Ignored by anthropic/openai/mock — those wrap their own SDK clients."""
+    Ignored by anthropic/openai/mock - those wrap their own SDK clients."""
 
     system_prompt: str = ""
     trigger_prompt: str
@@ -87,7 +87,7 @@ class RunnerConfig(BaseModel):
         payload_tools = [t for t in v if t.returns_payload]
         if len(payload_tools) == 0:
             raise ValueError(
-                "At least one mock_tool must have `returns_payload: true` — "
+                "At least one mock_tool must have `returns_payload: true` - "
                 "that's the tool the agent calls to receive the injection."
             )
         if len(payload_tools) > 1:

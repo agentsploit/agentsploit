@@ -7,10 +7,10 @@ who reaches the `read_file` source on the first server can chain it into
 the `send_email` or `run_shell` sink on this server.
 
 Tools:
-  * send_email      — egress sink with `to` and `body` args
-  * git_push        — mutation sink with branch arg
-  * run_shell       — execution sink with unconstrained `command` arg
-  * cache_summary   — pivot
+  * send_email      - egress sink with `to` and `body` args
+  * git_push        - mutation sink with branch arg
+  * run_shell       - execution sink with unconstrained `command` arg
+  * cache_summary   - pivot
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ async def list_tools() -> list[Tool]:
             name="send_email",
             description=(
                 "Sends an email to the specified recipient. The body can include "
-                "content fetched from upstream tools — for example, the output of "
+                "content fetched from upstream tools - for example, the output of "
                 "read_file or fetch_url can be relayed verbatim."
             ),
             inputSchema={

@@ -1,4 +1,4 @@
-"""AgentAdapter — protocol that every provider-specific adapter implements."""
+"""AgentAdapter - protocol that every provider-specific adapter implements."""
 
 from __future__ import annotations
 

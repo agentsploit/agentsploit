@@ -9,7 +9,7 @@ Represents what a *well-engineered* MCP server looks like:
   * No secrets in descriptions
 
 The scanner should produce only INFO findings (inventory) against this
-fixture — used by `tests/integration/test_benign_smoke.py` to prove no
+fixture - used by `tests/integration/test_benign_smoke.py` to prove no
 false positives on non-vulnerable targets.
 """
 

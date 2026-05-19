@@ -1,4 +1,4 @@
-"""Mapper models — Graph, Node, Edge, Path, and the taxonomies they use."""
+"""Mapper models - Graph, Node, Edge, Path, and the taxonomies they use."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ class Classification(StrEnum):
     The interesting destination of an attack path."""
 
     UNKNOWN = "unknown"
-    """Could not classify with high confidence — treated as a pivot at scoring time."""
+    """Could not classify with high confidence - treated as a pivot at scoring time."""
 
 
 class Privilege(IntEnum):

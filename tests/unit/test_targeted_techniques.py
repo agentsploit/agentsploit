@@ -56,7 +56,7 @@ def test_unicode_tag_canary_is_encoded_not_visible() -> None:
     t = UnicodeTagPathVerify(sink_tool_name="send_email", sink_arg_name="body")
     out = t.craft(InjectionContext(goal="x", canary=_CANARY))
     visible = "".join(c for c in out if ord(c) < 0xE0000)
-    # The literal canary must not appear in the visible text — only encoded
+    # The literal canary must not appear in the visible text - only encoded
     assert _CANARY not in visible
 
 

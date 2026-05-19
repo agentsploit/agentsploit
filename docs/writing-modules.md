@@ -68,7 +68,7 @@ The class is registered automatically via `Module.__init_subclass__`. Discovery 
 - Modules are async; the runtime uses `asyncio.run()` once per CLI invocation.
 - Use `httpx.AsyncClient` for HTTP, not `requests`.
 - Use the official `mcp` SDK for MCP, not raw JSON-RPC.
-- If a module is CPU-bound and has no I/O, declare an `async def run(...)` that yields synchronously — that's fine.
+- If a module is CPU-bound and has no I/O, declare an `async def run(...)` that yields synchronously - that's fine.
 
 ## What lives in `Evidence`
 
@@ -76,6 +76,6 @@ Anything a reviewer would want to see to triage the finding:
 
 - `request` / `response`: the request you sent and the response you got, redacted as needed.
 - `artifact_path`: path to a binary artifact (e.g. generated PDF) under `session.artifact_dir`.
-- `extra`: free-form dict — patterns matched, codepoints, etc.
+- `extra`: free-form dict - patterns matched, codepoints, etc.
 
 The framework auto-stamps `auth_hash`, `engagement_id`, and `session_id` into `evidence.extra` when `session.add(finding)` is called.

@@ -49,12 +49,12 @@ agentsploit scan mcp sse://stream.example.com/sse --auth ./auth.yaml
 | `tool_shadowing` | yes | yes | yes |
 | `prompt_disclosure` | yes | yes | yes |
 | `unsafe_tool_args` | yes | yes | yes |
-| `http_tls_required` | — | yes | yes |
-| `http_info_disclosure` | — | yes | yes |
-| `http_cors` | — | yes | yes |
-| `http_auth_bypass` | — | yes (needs `--auth-bearer*`) | yes (needs `--auth-bearer*`) |
+| `http_tls_required` | - | yes | yes |
+| `http_info_disclosure` | - | yes | yes |
+| `http_cors` | - | yes | yes |
+| `http_auth_bypass` | - | yes (needs `--auth-bearer*`) | yes (needs `--auth-bearer*`) |
 
-The four "inventory" checks are transport-agnostic — they run whenever the scanner can successfully enumerate the server. The HTTP probes only run for HTTP and SSE targets.
+The four "inventory" checks are transport-agnostic - they run whenever the scanner can successfully enumerate the server. The HTTP probes only run for HTTP and SSE targets.
 
 ## Authorization vs authentication
 

@@ -1,1 +1,1 @@
-"""Benign MCP server fixture — represents a well-engineered, non-vulnerable target."""
+"""Benign MCP server fixture - represents a well-engineered, non-vulnerable target."""

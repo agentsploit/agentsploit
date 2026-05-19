@@ -1,6 +1,6 @@
 # Authentication
 
-How AgentSploit authenticates to an MCP server. This is separate from the engagement authorization file, which controls *which targets* you're allowed to touch — see [AUTHORIZATION.md](../AUTHORIZATION.md) and [transports.md](transports.md).
+How AgentSploit authenticates to an MCP server. This is separate from the engagement authorization file, which controls *which targets* you're allowed to touch - see [AUTHORIZATION.md](../AUTHORIZATION.md) and [transports.md](transports.md).
 
 ## CLI flags
 
@@ -50,7 +50,7 @@ agentsploit scan mcp https://mcp.internal.local/mcp \
 
 When you supply credentials via any of the above flags, AgentSploit will also retry the MCP `initialize` request *without* those credentials. If the unauthenticated request succeeds, you get an `http_auth_bypass` finding at CRITICAL severity.
 
-If you don't supply credentials, the probe is skipped — there's no baseline to compare against, so "no auth required" might be the intended behaviour.
+If you don't supply credentials, the probe is skipped - there's no baseline to compare against, so "no auth required" might be the intended behaviour.
 
 ## What AgentSploit never does
 
@@ -62,8 +62,8 @@ If you don't supply credentials, the probe is skipped — there's no baseline to
 
 Credentials sit in three places during a scan:
 
-1. **Process environment** when you use `--auth-bearer-env` — visible to anything that can read `/proc/<pid>/environ` (root, the same UID under most policies)
-2. **Argv** when you use `--auth-bearer <literal>` — visible to anyone who can `ps`. Avoid in shared environments.
-3. **httpx in-memory** — held for the duration of the scan, then dropped when the client exits
+1. **Process environment** when you use `--auth-bearer-env` - visible to anything that can read `/proc/<pid>/environ` (root, the same UID under most policies)
+2. **Argv** when you use `--auth-bearer <literal>` - visible to anyone who can `ps`. Avoid in shared environments.
+3. **httpx in-memory** - held for the duration of the scan, then dropped when the client exits
 
 Prefer `--auth-bearer-env` over literal `--auth-bearer` for non-trivial environments.

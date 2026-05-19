@@ -1,6 +1,6 @@
 # SARIF integration
 
-AgentSploit emits [SARIF 2.1.0](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) — the Static Analysis Results Interchange Format — for every command that produces findings. SARIF is the industry-standard format consumed by GitHub Code Scanning, Microsoft Defender for Cloud, Sonatype, and most enterprise findings-management platforms.
+AgentSploit emits [SARIF 2.1.0](https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html) - the Static Analysis Results Interchange Format - for every command that produces findings. SARIF is the industry-standard format consumed by GitHub Code Scanning, Microsoft Defender for Cloud, Sonatype, and most enterprise findings-management platforms.
 
 > v1.0 guarantee: every release's SARIF output validates clean against the official 2.1.0 JSON Schema. The check is enforced in CI via `tests/integration/test_sarif_schema.py`.
 
@@ -30,7 +30,7 @@ agentsploit verify all-paths --graph ./graph.json --auth ./auth.yaml \
 | `rule.shortDescription.text` | Finding title |
 | `rule.fullDescription.text` | Finding description |
 | `rule.helpUri` | First reference URL on the finding (OWASP LLM-Top-10 link, CVE, blog post) |
-| `rule.defaultConfiguration.level` | SARIF level — see severity mapping below |
+| `rule.defaultConfiguration.level` | SARIF level - see severity mapping below |
 | `runs[0].results[]` | One per finding |
 | `result.ruleId` | Same as above |
 | `result.message.text` | Finding description |
@@ -42,7 +42,7 @@ agentsploit verify all-paths --graph ./graph.json --auth ./auth.yaml \
 | `result.properties.fingerprint` | Same as `partialFingerprints.primary` |
 | `runs[0].properties.engagement_id` | From the authorization YAML |
 | `runs[0].properties.session_id` | Per-invocation session ID |
-| `runs[0].properties.auth_hash` | SHA-256 of the authorization YAML — audit trail |
+| `runs[0].properties.auth_hash` | SHA-256 of the authorization YAML - audit trail |
 
 ## Severity mapping
 
@@ -58,7 +58,7 @@ SARIF defines four levels: `none`, `note`, `warning`, `error`. AgentSploit maps 
 
 ## Stable fingerprints
 
-Every finding has a deterministic fingerprint derived from `(module, check, target, title)`. SARIF consumers use this for **deduplication across runs** — if the same finding reappears in tomorrow's scan, GitHub Code Scanning won't open a new alert.
+Every finding has a deterministic fingerprint derived from `(module, check, target, title)`. SARIF consumers use this for **deduplication across runs** - if the same finding reappears in tomorrow's scan, GitHub Code Scanning won't open a new alert.
 
 ```python
 # from src/agentsploit/core/finding.py
@@ -128,6 +128,6 @@ python -c "import json, jsonschema; jsonschema.validate(json.load(open('scan.sar
 
 ## What AgentSploit doesn't emit (yet)
 
-- **`locations`** — SARIF supports file/line location for findings. AgentSploit findings target *services* (MCP servers, agent endpoints), not source files, so we leave `locations` empty. If you want them populated for static analysis of MCP server source code, that's a v1.1 feature request.
-- **`fixes`** — programmatic patch suggestions. Our `remediation` text is human-readable only.
-- **Code-flow traces** — AgentSploit's traces (runner / poisoner) are persisted as separate JSON artifacts, not embedded in SARIF.
+- **`locations`** - SARIF supports file/line location for findings. AgentSploit findings target *services* (MCP servers, agent endpoints), not source files, so we leave `locations` empty. If you want them populated for static analysis of MCP server source code, that's a v1.1 feature request.
+- **`fixes`** - programmatic patch suggestions. Our `remediation` text is human-readable only.
+- **Code-flow traces** - AgentSploit's traces (runner / poisoner) are persisted as separate JSON artifacts, not embedded in SARIF.

@@ -1,4 +1,4 @@
-"""MockAgentAdapter — deterministic agent simulator for tests and demos.
+"""MockAgentAdapter - deterministic agent simulator for tests and demos.
 
 Behaviour:
   1. Turn 1: the agent "decides" to call the payload-returning mock tool

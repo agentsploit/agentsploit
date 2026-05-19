@@ -24,7 +24,7 @@ async def test_scanner_against_vulnerable_fixture(
 
     checks_fired = {f.check for f in session.findings}
 
-    # The fixture exposes one of each vulnerability class — every check should fire.
+    # The fixture exposes one of each vulnerability class - every check should fire.
     assert "tool_poisoning" in checks_fired, "expected tool_poisoning on read_secret_file"
     assert "tool_shadowing" in checks_fired, "expected tool_shadowing on read_file"
     assert "prompt_disclosure" in checks_fired, "expected prompt_disclosure on AWS key"

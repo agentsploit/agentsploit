@@ -1,4 +1,4 @@
-"""Markdown carrier — embeds the payload in README/ticket-style markdown."""
+"""Markdown carrier - embeds the payload in README/ticket-style markdown."""
 
 from __future__ import annotations
 

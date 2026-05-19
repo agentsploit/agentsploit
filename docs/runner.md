@@ -1,6 +1,6 @@
 # Live agent runner
 
-The runner takes a generated injection payload and drives it through a real LLM agent. If the canary embedded in the payload surfaces in the agent's response, tool calls, or thinking trace, the injection is **confirmed exploitable** — not a static finding, an actual proof of exploitation.
+The runner takes a generated injection payload and drives it through a real LLM agent. If the canary embedded in the payload surfaces in the agent's response, tool calls, or thinking trace, the injection is **confirmed exploitable** - not a static finding, an actual proof of exploitation.
 
 ## When to use it
 
@@ -67,7 +67,7 @@ mock_tools:
 | `http` | Generic HTTP agent with OpenAI-shaped request/response | `api_key_env:` → `Authorization: Bearer …`; extra `headers:` dict | For in-house wrappers (v0.9+). Subclass `GenericHTTPAdapter` for custom shapes |
 | `mock` | Deterministic in-process simulator | none | Tests, demos, batch pre-filter |
 
-The `endpoint` and `headers` fields are HTTP-only — `anthropic`/`mock` ignore them.
+The `endpoint` and `headers` fields are HTTP-only - `anthropic`/`mock` ignore them.
 
 ### Authoring a custom HTTP adapter
 
@@ -109,7 +109,7 @@ agentsploit generate injection \
   --canary AS-DEMO12345678 \
   -o ./payload.pdf
 
-# 2. Drive it through the mock agent (no API key needed — for testing)
+# 2. Drive it through the mock agent (no API key needed - for testing)
 agentsploit run injection \
   --payload ./payload.pdf \
   --canary AS-DEMO12345678 \
@@ -141,11 +141,11 @@ Training mode (`--training`) allows `agent+mock://*` and loopback HTTP for safe 
 
 - **API key sourcing**: always prefer `api_key_env` in the config + env-var sourcing on the host. Never paste keys into YAML.
 - **Cost control**: set `max_turns` (default 6) and `timeout_seconds` (default 60) conservatively. A misbehaving agent can otherwise burn tokens in a tool-call loop.
-- **Trace artifacts**: every run persists the full normalised trace to `engagements/<engagement_id>/<session_id>/trace-<canary>.json`. Review this when triaging — it's the audit record of what the agent actually saw and did.
+- **Trace artifacts**: every run persists the full normalised trace to `engagements/<engagement_id>/<session_id>/trace-<canary>.json`. Review this when triaging - it's the audit record of what the agent actually saw and did.
 - **Multiple canaries**: generate a fresh payload per run rather than reusing a canary. If the canary leaks somewhere (logs, screenshots) before the run, your detection is contaminated.
 
 ## What the runner is not
 
-- **Not a fuzzer.** It does not iterate techniques automatically — you choose the technique and carrier when generating the payload.
-- **Not a benchmark.** A failed canary surface does not mean the agent is "secure" — it means *this* payload didn't land. Try other techniques/carriers, or adjust the system prompt to better simulate your target.
+- **Not a fuzzer.** It does not iterate techniques automatically - you choose the technique and carrier when generating the payload.
+- **Not a benchmark.** A failed canary surface does not mean the agent is "secure" - it means *this* payload didn't land. Try other techniques/carriers, or adjust the system prompt to better simulate your target.
 - **Not a tool to attack other people's agents.** You must own the agent or have written authorization to test it. See [AUTHORIZATION.md](../AUTHORIZATION.md).

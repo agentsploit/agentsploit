@@ -1,4 +1,4 @@
-"""Path verifier — turn a mapper-inferred path into a confirmed exploit.
+"""Path verifier - turn a mapper-inferred path into a confirmed exploit.
 
 Pipeline:
 

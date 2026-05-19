@@ -1,4 +1,4 @@
-"""Finding model — the unit of output produced by every check."""
+"""Finding model - the unit of output produced by every check."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Delimiter technique — escape from fenced/quoted content blocks the host uses."""
+"""Delimiter technique - escape from fenced/quoted content blocks the host uses."""
 
 from __future__ import annotations
 

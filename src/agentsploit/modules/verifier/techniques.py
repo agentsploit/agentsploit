@@ -1,4 +1,4 @@
-"""Path-targeted injection techniques — back-compat shim.
+"""Path-targeted injection techniques - back-compat shim.
 
 The v0.5 module exposed a single `PathVerifyTechnique`. v0.7 broke that out
 into a catalog of variants under `targeted_techniques.py`. This file re-exports

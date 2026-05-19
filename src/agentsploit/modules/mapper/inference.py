@@ -1,4 +1,4 @@
-"""Edge inference — decide which tool's output could plausibly feed another's input.
+"""Edge inference - decide which tool's output could plausibly feed another's input.
 
 MCP tools don't carry output schemas, so we use three heuristic signals:
 
@@ -20,7 +20,7 @@ from collections.abc import Iterable
 
 from agentsploit.modules.mapper.models import Classification, Edge, Node
 
-# Generic argument names that almost every string-typed input has — too
+# Generic argument names that almost every string-typed input has - too
 # generic to count as evidence of a real chain.
 _GENERIC_ARGS = {"input", "data", "value", "text", "name", "id", "key", "arg"}
 
@@ -49,13 +49,13 @@ def infer_edges(nodes: Iterable[Node]) -> list[Edge]:
     nodes_list = list(nodes)
 
     for src in nodes_list:
-        # Sinks don't initiate chains — their output is "the action happened"
+        # Sinks don't initiate chains - their output is "the action happened"
         if src.classification == Classification.SINK:
             continue
         for dst in nodes_list:
             if src.id == dst.id:
                 continue
-            # Sources can't be destinations — they consume from the outside world
+            # Sources can't be destinations - they consume from the outside world
             if dst.classification == Classification.SOURCE:
                 continue
             edge = _infer_one(src, dst)

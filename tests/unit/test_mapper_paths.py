@@ -49,7 +49,7 @@ def test_filters_paths_below_min_privilege() -> None:
         ("srv-b", "cache_summary", "Stores a summary.", None),
     )
     paths = find_all_paths(g, min_privilege=Privilege.EGRESS)
-    # cache_summary classifies as pivot — no SINK at all, no paths
+    # cache_summary classifies as pivot - no SINK at all, no paths
     assert paths == []
 
 

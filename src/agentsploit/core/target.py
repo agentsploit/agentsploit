@@ -1,4 +1,4 @@
-"""Target model — what we're attacking, with URI parsing."""
+"""Target model - what we're attacking, with URI parsing."""
 
 from __future__ import annotations
 

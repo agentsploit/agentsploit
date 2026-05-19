@@ -1,4 +1,4 @@
-"""FuzzPathVerifier — try multiple targeted techniques against the same path.
+"""FuzzPathVerifier - try multiple targeted techniques against the same path.
 
 Stops at the first CONFIRMED outcome (early termination) and emits a summary
 finding showing which technique landed plus per-technique outcomes. Useful

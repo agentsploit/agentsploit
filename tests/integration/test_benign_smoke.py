@@ -1,4 +1,4 @@
-"""Benign-fixture smoke test — proves the scanner doesn't false-positive.
+"""Benign-fixture smoke test - proves the scanner doesn't false-positive.
 
 Every other integration test asserts that AgentSploit *finds* issues in
 intentionally-vulnerable fixtures. This one asserts the opposite: against

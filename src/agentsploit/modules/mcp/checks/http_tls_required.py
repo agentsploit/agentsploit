@@ -2,7 +2,7 @@
 
 Flags MCP HTTP/SSE servers reachable over plain HTTP when they should be
 HTTPS-only. Plain HTTP is acceptable for localhost / loopback testing but
-never for anything else — MCP traffic includes tool descriptions (which may
+never for anything else - MCP traffic includes tool descriptions (which may
 contain prompt content) and tool-call results (which may contain sensitive
 data).
 """
@@ -47,8 +47,8 @@ class HTTPTLSRequiredProbe(Probe):
             title="MCP server reachable over plain HTTP",
             description=(
                 f"The target {target.uri!r} is served over plain HTTP, not HTTPS, "
-                f"and the host is not localhost. All MCP traffic — including tool "
-                f"descriptions, tool-call arguments, and tool-call results — is "
+                f"and the host is not localhost. All MCP traffic - including tool "
+                f"descriptions, tool-call arguments, and tool-call results - is "
                 f"transmitted in cleartext. Any on-path attacker can read or modify "
                 f"agent interactions."
             ),

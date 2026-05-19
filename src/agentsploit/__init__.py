@@ -1,4 +1,4 @@
-"""AgentSploit — offensive security framework for AI agents and MCP servers."""
+"""AgentSploit - offensive security framework for AI agents and MCP servers."""
 
 from agentsploit.version import __version__
 

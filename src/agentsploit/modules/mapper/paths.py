@@ -16,7 +16,7 @@ def find_all_paths(
 ) -> list[Path]:
     """Return every source→sink path of length ≤ max_length, sorted by severity.
 
-    `min_privilege` filters out paths that end at sinks below the bar — by
+    `min_privilege` filters out paths that end at sinks below the bar - by
     default only EGRESS, MUTATION, and EXECUTION sinks are interesting.
     """
     adjacency: dict[str, list[Edge]] = defaultdict(list)

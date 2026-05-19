@@ -1,7 +1,7 @@
 """CORS misconfiguration probe.
 
 MCP servers should NOT serve cross-origin requests from arbitrary web origins
-— a browser running a malicious page could otherwise make an MCP user's
+- a browser running a malicious page could otherwise make an MCP user's
 session perform tool calls without their knowledge. This probe sends a
 preflight from an attacker-controlled origin and inspects the CORS headers.
 

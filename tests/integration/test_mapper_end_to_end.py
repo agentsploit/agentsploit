@@ -76,7 +76,7 @@ async def test_mapper_persists_graph_artifact(
 async def test_execution_sink_path_is_critical_severity(
     session: Session, source_fixture_uri: str, sink_fixture_uri: str
 ) -> None:
-    """The sink fixture has run_shell — any path ending there should be CRITICAL."""
+    """The sink fixture has run_shell - any path ending there should be CRITICAL."""
     mapper = PermissionMapper(
         target_uris=[source_fixture_uri, sink_fixture_uri],
         min_sink_privilege=Privilege.EXECUTION,

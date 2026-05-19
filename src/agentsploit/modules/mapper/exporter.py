@@ -52,7 +52,7 @@ def to_dot(graph: Graph) -> str:
 
 
 def to_mermaid(graph: Graph) -> str:
-    """Mermaid flowchart syntax — renders inline in GitHub markdown."""
+    """Mermaid flowchart syntax - renders inline in GitHub markdown."""
     lines = ["flowchart LR"]
     for node in graph.nodes.values():
         label = f"{node.name}<br/>[{_PRIVILEGE_RANK[node.privilege]}]"

@@ -1,4 +1,4 @@
-"""PermissionMapper — Module that builds the graph and reports high-risk paths."""
+"""PermissionMapper - Module that builds the graph and reports high-risk paths."""
 
 from __future__ import annotations
 

@@ -49,7 +49,7 @@ class HTTPAuthBypassProbe(Probe):
 
     async def run(self, target: Target, credentials: Credentials) -> AsyncIterator[CheckResult]:
         # Only probe if the operator actually supplied credentials. If they
-        # didn't, an unauthenticated success isn't informative — we have no
+        # didn't, an unauthenticated success isn't informative - we have no
         # baseline to compare against.
         if not credentials.bearer_token and "Authorization" not in credentials.headers:
             return
@@ -79,7 +79,7 @@ class HTTPAuthBypassProbe(Probe):
             return  # correct: auth required
 
         if resp.status_code != 200:
-            return  # ambiguous — don't flag
+            return  # ambiguous - don't flag
 
         # 200 + a JSON-RPC result means unauthenticated init succeeded
         content_type = resp.headers.get("content-type", "").lower()
@@ -94,7 +94,7 @@ class HTTPAuthBypassProbe(Probe):
             except json.JSONDecodeError:
                 pass
         elif "text/event-stream" in content_type:
-            # SSE stream — a "data:" line with result text indicates success
+            # SSE stream - a "data:" line with result text indicates success
             success = '"result"' in body_text
 
         if not success:

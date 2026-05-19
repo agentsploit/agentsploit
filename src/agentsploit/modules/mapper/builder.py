@@ -1,4 +1,4 @@
-"""Multi-target enumerator — turns a list of MCP target URIs into a Graph."""
+"""Multi-target enumerator - turns a list of MCP target URIs into a Graph."""
 
 from __future__ import annotations
 

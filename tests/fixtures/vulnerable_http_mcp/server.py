@@ -54,7 +54,7 @@ async def safe_add(a: int, b: int) -> int:
 
 
 class _LeakyHeadersMiddleware(BaseHTTPMiddleware):
-    """Add verbose Server / X-Powered-By headers — info_disclosure probe target."""
+    """Add verbose Server / X-Powered-By headers - info_disclosure probe target."""
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
         response: Response = await call_next(request)

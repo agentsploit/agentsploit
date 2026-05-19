@@ -17,7 +17,7 @@ Every tool is one of:
 
 ### Sink privilege
 
-When a tool is a sink, the mapper also assigns a privilege class — this drives finding severity:
+When a tool is a sink, the mapper also assigns a privilege class - this drives finding severity:
 
 | Privilege | Severity | Examples |
 |---|---|---|
@@ -35,7 +35,7 @@ The mapper infers an edge `A → B` when:
 - `A` and `B` share "pivot" tokens in their descriptions (`url`, `path`, `email`, `content`, …)
 - `A` is a source and `B` is a sink (baseline relay-path signal)
 
-MCP doesn't define output schemas, so edge inference is heuristic — operators can override classifications when wrong.
+MCP doesn't define output schemas, so edge inference is heuristic - operators can override classifications when wrong.
 
 ### Paths
 
@@ -72,7 +72,7 @@ targets:
   - "https://mcp.staging.example.com/mcp"
 ```
 
-The map config only lists URIs. Authentication for HTTP/SSE targets is supplied via the same `--header`/`--auth-bearer-env`/`--insecure` flags as `scan mcp` — one credential set applies to every target in the run.
+The map config only lists URIs. Authentication for HTTP/SSE targets is supplied via the same `--header`/`--auth-bearer-env`/`--insecure` flags as `scan mcp` - one credential set applies to every target in the run.
 
 ## Pairing with the runner
 
@@ -83,11 +83,11 @@ The mapper's output is a *hypothesis space*: "here are the paths an attacker cou
 3. `agentsploit run injection` against an agent that has both ends of the chain
 4. If the canary surfaces in a tool call to the *sink*, the path is real
 
-A confirmed path moves the finding from "inferred" to "exploitable" — same severity scale as the v0.3 runner findings.
+A confirmed path moves the finding from "inferred" to "exploitable" - same severity scale as the v0.3 runner findings.
 
 ## Operator overrides
 
-The classifier is heuristic. When it gets a tool wrong, the persisted `permission_graph.json` is editable — just change the `classification` and `privilege` fields and re-run `map export` and `map query`. We plan to add a YAML override file in v0.5.
+The classifier is heuristic. When it gets a tool wrong, the persisted `permission_graph.json` is editable - just change the `classification` and `privilege` fields and re-run `map export` and `map query`. We plan to add a YAML override file in v0.5.
 
 ## What the mapper is not
 

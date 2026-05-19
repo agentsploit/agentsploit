@@ -1,9 +1,9 @@
-"""MockTool — a tool we expose to the target agent that returns a chosen string.
+"""MockTool - a tool we expose to the target agent that returns a chosen string.
 
 Used to deliver the payload realistically: the agent is told to read a
 document or fetch a URL, and the mock tool returns the injection content.
 
-v0.8 adds `on_call` — an optional callback that receives the agent's
+v0.8 adds `on_call` - an optional callback that receives the agent's
 tool-call arguments and returns the response. This lets a single tool
 behave differently depending on what was passed in, which the memory-
 poisoning module uses to wire `save_note`/`read_note` against a shared
@@ -54,7 +54,7 @@ class MockTool(BaseModel):
     default_args: dict[str, Any] | None = None
     """If set, the mock adapter uses these arguments when synthesising a
     tool call to this tool (overrides the schema-derived default). Real
-    adapters ignore this — the live agent picks args from the trigger prompt."""
+    adapters ignore this - the live agent picks args from the trigger prompt."""
 
     def render_response(self, payload: str, arguments: dict[str, Any] | None = None) -> str:
         if self.on_call is not None:

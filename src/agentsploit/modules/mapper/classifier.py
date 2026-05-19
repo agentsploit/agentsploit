@@ -1,6 +1,6 @@
 """Classify a tool into source / pivot / sink and assign a privilege level.
 
-The classifier is intentionally heuristic — it inspects tool name, argument
+The classifier is intentionally heuristic - it inspects tool name, argument
 names, and description for known indicators. Operators can override
 classification on a per-tool basis when wrong (see docs/mapper.md).
 
@@ -149,7 +149,7 @@ def _classify_as_sink(lname: str, ldesc: str, node: Node, reasons: list[str]) ->
             if best is None:
                 best = Privilege.EGRESS
 
-    # Dangerous argument names — only mark as sink if name didn't already classify
+    # Dangerous argument names - only mark as sink if name didn't already classify
     if best is None:
         props = node.input_schema.get("properties", {})
         if isinstance(props, dict):

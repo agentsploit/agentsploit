@@ -1,12 +1,12 @@
 # Contributing to AgentSploit
 
-Thanks for your interest. AgentSploit is a community offensive security tool — contributions of new modules, checks, payload techniques, and carriers are especially welcome.
+Thanks for your interest. AgentSploit is a community offensive security tool - contributions of new modules, checks, payload techniques, and carriers are especially welcome.
 
 ## Ground rules
 
 1. **No 0-days.** AgentSploit only ships modules for vulnerabilities that have been responsibly disclosed and either fixed or assigned a CVE. If you're researching a novel vulnerability, follow the disclosure path in [SECURITY.md](SECURITY.md) before opening a PR.
 2. **No targeting of specific real systems.** Generic checks for misconfiguration classes are welcome; "checks" that exploit a specific company's deployment are not.
-3. **Authorization-first.** All scanning code must route through `Authorization.check()` — never bypass it.
+3. **Authorization-first.** All scanning code must route through `Authorization.check()` - never bypass it.
 4. **Apache 2.0.** All contributions are licensed under Apache 2.0. You agree to the Developer Certificate of Origin by signing your commits (`git commit -s`).
 
 ## Dev setup

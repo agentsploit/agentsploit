@@ -1,4 +1,4 @@
-"""Unit tests for MCP scanner checks (no live server — inventory is mocked)."""
+"""Unit tests for MCP scanner checks (no live server - inventory is mocked)."""
 
 from __future__ import annotations
 
