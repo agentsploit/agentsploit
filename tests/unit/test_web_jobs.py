@@ -62,9 +62,7 @@ async def test_runner_exception_marks_failed(tmp_path) -> None:  # type: ignore[
     async def runner(_ctx: JobContext) -> None:
         raise RuntimeError("boom")
 
-    rec = await mgr.submit(
-        kind="scan", label="t", request={}, runner=runner, session=session
-    )
+    rec = await mgr.submit(kind="scan", label="t", request={}, runner=runner, session=session)
     await rec._task  # type: ignore[arg-type]
     fresh = await mgr.get(rec.id)
     assert fresh is not None
@@ -85,9 +83,7 @@ async def test_cancel_running_job(tmp_path) -> None:  # type: ignore[no-untyped-
         started.set()
         await asyncio.sleep(60)
 
-    rec = await mgr.submit(
-        kind="scan", label="t", request={}, runner=runner, session=session
-    )
+    rec = await mgr.submit(kind="scan", label="t", request={}, runner=runner, session=session)
     await started.wait()
     assert await mgr.cancel(rec.id) is True
     with pytest.raises(asyncio.CancelledError):
@@ -127,9 +123,7 @@ async def test_emits_lifecycle_events(tmp_path) -> None:  # type: ignore[no-unty
             )
         )
 
-    rec = await mgr.submit(
-        kind="scan", label="t", request={}, runner=runner, session=session
-    )
+    rec = await mgr.submit(kind="scan", label="t", request={}, runner=runner, session=session)
     await rec._task  # type: ignore[arg-type]
     await asyncio.wait_for(consumer, timeout=2.0)
 

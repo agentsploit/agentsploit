@@ -123,9 +123,7 @@ class EventBroker:
     async def emit_job_started(self, job_id: str, payload: dict[str, Any]) -> None:
         await self.publish(Event(type="job.started", job_id=job_id, payload=payload))
 
-    async def emit_finding(
-        self, job_id: str, session_id: str, finding: dict[str, Any]
-    ) -> None:
+    async def emit_finding(self, job_id: str, session_id: str, finding: dict[str, Any]) -> None:
         """A scan/verify job just produced a finding.
 
         Payload shape mirrors `FindingDTO` in api.py so the UI can
@@ -153,9 +151,7 @@ class EventBroker:
         )
 
     async def emit_job_failed(self, job_id: str, error: str) -> None:
-        await self.publish(
-            Event(type="job.failed", job_id=job_id, payload={"error": error})
-        )
+        await self.publish(Event(type="job.failed", job_id=job_id, payload={"error": error}))
 
     async def emit_job_cancelled(self, job_id: str) -> None:
         await self.publish(Event(type="job.cancelled", job_id=job_id))

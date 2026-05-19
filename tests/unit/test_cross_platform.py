@@ -87,9 +87,7 @@ def test_token_creation_logs_warning_on_windows(
     assert any("Windows" in str(e.get("event", "")) for e in warnings)
 
 
-def test_token_creation_chmod_600_on_posix(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_token_creation_chmod_600_on_posix(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     if sys.platform == "win32":
         pytest.skip("POSIX-only: chmod has no effect on Windows")
     monkeypatch.setattr(sys, "platform", "linux")  # belt-and-braces
@@ -135,10 +133,7 @@ def test_stdio_path_detection(
     # Replicate the dispatch logic from _stdio_session.
     first = parts[0]
     looks_like_path = (
-        first.endswith(".py")
-        or "/" in first
-        or "\\" in first
-        or first.startswith(".")
+        first.endswith(".py") or "/" in first or "\\" in first or first.startswith(".")
     )
     command = "python" if looks_like_path else first
     args = parts if looks_like_path else parts[1:]
@@ -236,9 +231,7 @@ def test_no_hardcoded_tmp_in_source() -> None:
 
 def test_uvloop_not_a_dependency() -> None:
     """uvloop doesn't support Windows. Make sure we never accidentally add it."""
-    pyproject = (
-        Path(__file__).resolve().parents[2] / "pyproject.toml"
-    ).read_text(encoding="utf-8")
+    pyproject = (Path(__file__).resolve().parents[2] / "pyproject.toml").read_text(encoding="utf-8")
     # Match "uvloop" but tolerate it appearing inside a comment.
     for line in pyproject.splitlines():
         stripped = line.strip()

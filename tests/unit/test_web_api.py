@@ -62,9 +62,7 @@ def engagement_root(tmp_path: Path) -> Path:
             }
         )
     )
-    (sess_a / "permission_graph.json").write_text(
-        json.dumps({"nodes": {}, "edges": []})
-    )
+    (sess_a / "permission_graph.json").write_text(json.dumps({"nodes": {}, "edges": []}))
     (sess_a / "trace-001.json").write_text(json.dumps({"messages": []}))
 
     # sess-bbbb has only a manifest, no graph, no traces, no findings

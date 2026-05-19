@@ -32,9 +32,7 @@ def isolate_jobs_and_broker(monkeypatch: pytest.MonkeyPatch) -> None:
         return None
 
     monkeypatch.setitem(runners_module._REGISTRY, "scan", ("noop scan", _noop_scan))
-    monkeypatch.setitem(
-        runners_module._REGISTRY, "verify", ("noop verify", _noop_verify)
-    )
+    monkeypatch.setitem(runners_module._REGISTRY, "verify", ("noop verify", _noop_verify))
 
 
 @pytest.fixture

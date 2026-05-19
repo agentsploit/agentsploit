@@ -135,9 +135,7 @@ class JobManager:
 
     async def list(self) -> list[JobRecord]:
         async with self._lock:
-            return sorted(
-                self._jobs.values(), key=lambda j: j.created_at, reverse=True
-            )
+            return sorted(self._jobs.values(), key=lambda j: j.created_at, reverse=True)
 
     async def get(self, job_id: str) -> JobRecord | None:
         async with self._lock:
@@ -153,21 +151,15 @@ class JobManager:
 
     # ------------------------------------------------------------------ internals
 
-    async def _wrap_runner(
-        self, job: JobRecord, runner: JobRunner, session: Session
-    ) -> None:
+    async def _wrap_runner(self, job: JobRecord, runner: JobRunner, session: Session) -> None:
         async with self._semaphore:
             job.status = JobStatus.RUNNING
             job.started_at = datetime.now(UTC)
-            await self._broker.emit_job_started(
-                job.id, {"kind": job.kind, "label": job.label}
-            )
+            await self._broker.emit_job_started(job.id, {"kind": job.kind, "label": job.label})
             pending_emits: list[asyncio.Task[None]] = []
             ctx = JobContext(
                 record=job,
-                session=_event_emitting_session(
-                    session, self._broker, job, pending_emits
-                ),
+                session=_event_emitting_session(session, self._broker, job, pending_emits),
                 broker=self._broker,
                 authorization=session.authorization,
             )
@@ -207,9 +199,7 @@ class JobManager:
                 session.persist()
             except Exception:
                 log.exception("failed to persist session for succeeded job %s", job.id)
-            await self._broker.emit_job_finished(
-                job.id, session.id, job.finding_count
-            )
+            await self._broker.emit_job_finished(job.id, session.id, job.finding_count)
 
 
 def _event_emitting_session(
