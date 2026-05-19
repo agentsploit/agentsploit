@@ -53,7 +53,7 @@ def test_correct_token_passes(tmp_path: Path) -> None:
 
 
 def test_token_via_query_param(tmp_path: Path) -> None:
-    """EventSource can't set headers — the SSE endpoint accepts ?token=."""
+    """EventSource can't set headers - the SSE endpoint accepts ?token=."""
     app = build_app(tmp_path, auth_enabled=True, token="secret")
     c = TestClient(app)
     r = c.get("/api/health?token=secret")

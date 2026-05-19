@@ -124,7 +124,7 @@ def test_paths_listing_sorted_by_severity_desc(engagement_root: Path) -> None:
 
 
 def test_paths_empty_when_no_artifact(engagement_root: Path) -> None:
-    """Sessions written by < v1.6 lack paths.json — endpoint returns []."""
+    """Sessions written by < v1.6 lack paths.json - endpoint returns []."""
     sess = engagement_root / "eng" / "sess-old"
     sess.mkdir()
     (sess / "session.json").write_text(

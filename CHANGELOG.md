@@ -136,7 +136,7 @@ release matters for Windows operators and for the wheel itself.
 - `agentsploit.web` package: `web.server.build_app(engagement_dir)`
   returns a FastAPI app; `web.server.serve(host, port, engagement_dir)`
   is the uvicorn entry point. Reuses the existing on-disk engagement
-  layout — no schema migrations.
+  layout - no schema migrations.
 - REST API (`/api/`): `health`, `sessions`, `sessions/{id}`,
   `sessions/{id}/findings`, `sessions/{id}/graph`,
   `sessions/{id}/traces`, `sessions/{id}/traces/{filename}`. Every

@@ -1,7 +1,7 @@
 """Smoke test: verify the packaged frontend bundle is discoverable.
 
-This isn't a strict requirement — running from source without `npm run build`
-is supported and serves a graceful fallback page — but if the bundle IS
+This isn't a strict requirement - running from source without `npm run build`
+is supported and serves a graceful fallback page - but if the bundle IS
 present it must be wired correctly so the wheel ships a working UI.
 """
 
@@ -32,7 +32,7 @@ def test_spa_serves_index_when_bundle_present(tmp_path: Path) -> None:
     c = TestClient(app)
     r = c.get("/")
     assert r.status_code == 200
-    # Vite-built shells embed a module script tag — close enough to recognise
+    # Vite-built shells embed a module script tag - close enough to recognise
     # we got the bundle and not the fallback page.
     body = r.text.lower()
     assert "<!doctype html>" in body

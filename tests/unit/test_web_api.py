@@ -164,7 +164,7 @@ def test_trace_path_traversal_blocked(client: TestClient) -> None:
 
 
 def test_session_id_path_traversal_blocked(client: TestClient) -> None:
-    # Path-shaped ids never reach the routing handler — they trigger the
+    # Path-shaped ids never reach the routing handler - they trigger the
     # 'not found' branch in the path matcher. Confirm we don't 200 / leak.
     r = client.get("/api/sessions/..%2F..%2Fetc")
     assert r.status_code in (400, 404)

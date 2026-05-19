@@ -104,7 +104,7 @@ agentsploit serve -d /var/agentsploit/engagements
 ```
 
 The on-disk layout is `<engagement-dir>/<engagement-id>/<session-id>/`,
-which is what every `agentsploit` write command produces — there's no
+which is what every `agentsploit` write command produces - there's no
 separate index file to maintain.
 
 ## Dev workflow
