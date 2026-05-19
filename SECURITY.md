@@ -4,10 +4,11 @@
 
 | Version | Supported |
 |---|---|
-| 1.0.x | yes |
-| 0.x | best-effort fixes for critical issues; upgrade to 1.0 recommended |
+| 1.6.x | yes (current) |
+| 1.0.x - 1.5.x | best-effort fixes for critical issues; upgrade to 1.6 recommended |
+| 0.x | unsupported |
 
-When 1.1 ships, support for 1.0.x continues for 6 months from the 1.1 release date. The current supported window is always documented in this file.
+The latest minor release is always supported. The previous minor receives critical-severity fixes for 6 months after the next minor ships.
 
 ## Reporting a vulnerability in AgentSploit itself
 
@@ -15,8 +16,8 @@ A vulnerability in AgentSploit (the framework, not a target it scans) means: a w
 
 **Report privately** via:
 
-- **GitHub Security Advisories** (preferred): https://github.com/desledishant10/agentsploit/security/advisories/new
-- **Email**: security@agentsploit.dev (PGP key in [`docs/pgp-public-key.asc`](docs/pgp-public-key.asc) - TODO before 1.1)
+- **GitHub Security Advisories** (preferred): https://github.com/agentsploit/agentsploit/security/advisories/new
+- **Email**: security@agentsploit.dev
 
 Please include:
 

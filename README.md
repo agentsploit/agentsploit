@@ -1,7 +1,8 @@
 # AgentSploit
 
-[![Status: 1.0 stable](https://img.shields.io/badge/status-1.0_stable-brightgreen)](CHANGELOG.md)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue)](pyproject.toml)
+[![CI](https://github.com/agentsploit/agentsploit/actions/workflows/ci.yml/badge.svg)](https://github.com/agentsploit/agentsploit/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/agentsploit?label=pypi)](https://pypi.org/project/agentsploit/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)](pyproject.toml)
 [![Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-blue)](LICENSE)
 [![SARIF 2.1.0](https://img.shields.io/badge/SARIF-2.1.0-blueviolet)](docs/sarif.md)
 
@@ -27,9 +28,26 @@ Every Fortune 500 is shipping LLM agents and MCP servers in 2026. The attack sur
 
 Existing scanners (Burp, ZAP, Semgrep, Snyk) don't speak this layer. AgentSploit does.
 
-## What's in v0.1
+## TL;DR
 
-This release ships two MVP capabilities:
+```bash
+pip install agentsploit
+
+# Scaffold an engagement
+agentsploit init my-engagement/ --authorized-by "Jane Doe <ciso@example.com>"
+cd my-engagement/
+
+# Scan an MCP server (training mode = no API keys needed, bundled fixtures)
+agentsploit scan mcp stdio://./tests/fixtures/vulnerable_mcp/server.py --training
+
+# Browse results in your browser (live engagement dashboard, v1.6+)
+agentsploit serve --training
+# -> http://127.0.0.1:8800 (token printed on startup)
+```
+
+## Capabilities
+
+AgentSploit ships eleven modules covering the agentic attack surface. Each is documented end-to-end with bundled vulnerable fixtures so you can run every one against a local target with `--training` and no API keys.
 
 ### 1. MCP Server Scanner
 
@@ -241,19 +259,22 @@ Cytoscape-rendered permission graphs, severity-filtered findings tables with per
 
 ## Install
 
-Requires Python 3.11+.
+Requires Python 3.11+. Works on Linux, macOS, and Windows.
 
 ```bash
-# With uv (recommended)
-uv tool install agentsploit
-
-# Or with pipx
+# Recommended: use pipx so it lives in its own venv
 pipx install agentsploit
 
-# Or with pip in a venv
-python -m venv .venv && source .venv/bin/activate
+# Or with uv
+uv tool install agentsploit
+
+# Or plain pip in a venv
+python -m venv .venv && source .venv/bin/activate  # macOS/Linux
+# .venv\Scripts\activate                            # Windows
 pip install agentsploit
 ```
+
+The wheel bundles the pre-built React web UI, so the install above is everything you need; no Node toolchain required to run `agentsploit serve`.
 
 ## Quickstart
 
@@ -286,15 +307,23 @@ agentsploit list-modules
 ## Architecture
 
 ```
-agentsploit/
-├── core/           # Module base classes, Target/Authorization/Finding/Session
+src/agentsploit/
+├── core/           # Module base classes, Target/Authorization/Finding/Session, Reporters
 ├── modules/
-│   ├── mcp/        # MCP scanner + checks
-│   └── injection/  # Payload techniques + carriers
+│   ├── mcp/         # MCP server scanner + checks (v0.1)
+│   ├── injection/   # Indirect prompt-injection generator (v0.1)
+│   ├── runner/      # Live agent runner with canary detection (v0.3)
+│   ├── mapper/      # Cross-server permission graph + path inference (v0.4)
+│   ├── verifier/    # Path verification: drive agents through inferred chains (v0.5)
+│   ├── fuzzer/      # Technique × carrier fuzzing (v0.7)
+│   └── poisoning/   # Memory / RAG / conversation-thread poisoning (v0.8 + v1.1 + v1.4)
+├── web/            # FastAPI server, auth, job runner, SSE event broker (v1.5 + v1.6)
+├── adapters/       # Anthropic, OpenAI, HTTP, mock LLM adapters (v0.9)
+├── scaffolder.py   # `agentsploit init` engagement scaffold (v1.3)
 └── cli.py          # Typer entry point
 ```
 
-Modules are plugin-style: drop a class into `modules/` and it shows up in `list-modules` automatically.
+Modules are plugin-style: drop a class into `modules/` and it shows up in `agentsploit list-modules` automatically.
 
 See [docs/architecture.md](docs/architecture.md) for the full design.
 
