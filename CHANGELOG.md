@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-05-18
+
+### Added
+
+- **OpenAIAdapter** — drives OpenAI Chat Completions with native tool use
+  until the agent stops calling tools. Handles the JSON-string-encoded
+  `function.arguments` quirk and the `tool` role follow-up shape.
+- **GenericHTTPAdapter** — POSTs to a configurable HTTP endpoint with
+  OpenAI-shaped request/response. Bearer auth via `api_key_env`, extra
+  headers via the new `RunnerConfig.headers` field. Override
+  `_build_request_body` / `_parse_response` for non-OpenAI shapes.
+- `RunnerConfig.headers: dict[str, str]` — extra HTTP headers (HTTP
+  providers only)
+- `get_adapter("openai")` and `get_adapter("http")` registered
+- `examples/agent-openai.yaml` and `examples/agent-http.yaml`
+- Custom-adapter authoring guide in `docs/runner.md`
+- `openai>=1.50.0` runtime dep
+- Unit tests for both adapters using `httpx.MockTransport`
+
+### Changed
+
+- Adapter catalog in `docs/runner.md` rewritten as a table covering all
+  four providers
+- README v0.3 section updated to reflect 4 adapters
+
 ## [0.8.0] - 2026-05-18
 
 ### Added

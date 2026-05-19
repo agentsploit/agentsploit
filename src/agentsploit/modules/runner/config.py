@@ -57,6 +57,10 @@ class RunnerConfig(BaseModel):
     endpoint: str | None = None
     """For provider=http: the full POST URL for the agent endpoint."""
 
+    headers: dict[str, str] = Field(default_factory=dict)
+    """Extra HTTP headers sent on every request (HTTP-based providers only).
+    Ignored by anthropic/openai/mock — those wrap their own SDK clients."""
+
     system_prompt: str = ""
     trigger_prompt: str
     """The initial user-turn prompt that nudges the agent to invoke the tool

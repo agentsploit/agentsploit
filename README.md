@@ -80,7 +80,7 @@ Takes a generated payload + an agent config and drives the payload through a rea
 | `canary_thinking` | MEDIUM | Canary appeared in extended-thinking but the agent didn't act on it |
 | `no_surface` | INFO | Payload drove cleanly through but didn't land |
 
-**Adapters in v0.3:** `anthropic` (real Claude tool-use), `mock` (deterministic, for tests). OpenAI + generic HTTP land in v0.4. See [docs/runner.md](docs/runner.md).
+**Adapters (v0.9):** `anthropic` (real Claude tool-use), `openai` (Chat Completions with tool use), `http` (generic HTTP agent with OpenAI-shaped contract — subclass for custom shapes), `mock` (deterministic, for tests). See [docs/runner.md](docs/runner.md).
 
 ### 4. Permission Graph Mapper (v0.4)
 

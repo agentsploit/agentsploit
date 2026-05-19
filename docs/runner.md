@@ -42,7 +42,7 @@ Loaded from a YAML file. See [examples/agent-anthropic.yaml](../examples/agent-a
 Minimal config:
 
 ```yaml
-provider: anthropic        # anthropic | mock (openai, http land in v0.4)
+provider: anthropic        # anthropic | openai | http | mock
 model: claude-sonnet-4-6
 api_key_env: ANTHROPIC_API_KEY
 
@@ -57,6 +57,43 @@ mock_tools:
     description: Reads a document by name
     returns_payload: true    # exactly one tool must set this
 ```
+
+### Adapter catalog
+
+| `provider` | What it talks to | Auth | Notes |
+|---|---|---|---|
+| `anthropic` | Anthropic Messages API (Claude tool use) | `api_key_env: ANTHROPIC_API_KEY` | Supports extended thinking detection (v0.3+) |
+| `openai` | OpenAI Chat Completions API | `api_key_env: OPENAI_API_KEY` | Set `endpoint:` to point at Azure OpenAI / OpenRouter / proxies (v0.9+) |
+| `http` | Generic HTTP agent with OpenAI-shaped request/response | `api_key_env:` → `Authorization: Bearer …`; extra `headers:` dict | For in-house wrappers (v0.9+). Subclass `GenericHTTPAdapter` for custom shapes |
+| `mock` | Deterministic in-process simulator | none | Tests, demos, batch pre-filter |
+
+The `endpoint` and `headers` fields are HTTP-only — `anthropic`/`mock` ignore them.
+
+### Authoring a custom HTTP adapter
+
+Most in-house agents wrap an LLM behind a custom HTTP endpoint with a non-OpenAI shape. To support yours, subclass `GenericHTTPAdapter` and override the relevant method:
+
+```python
+from agentsploit.modules.runner.adapters.http import GenericHTTPAdapter
+from agentsploit.modules.runner.trace import ToolCall
+
+class AcmeAgentAdapter(GenericHTTPAdapter):
+    def _build_request_body(self, messages, tools, config):
+        # Acme's endpoint takes {prompt: str, available_tools: [...]}
+        return {"prompt": messages[-1]["content"], "available_tools": tools}
+
+    def _parse_response(self, payload):
+        # Acme returns {"reply": "...", "calls": [{"tool": "...", "args": {...}}]}
+        text = payload.get("reply", "")
+        tool_calls = [
+            ToolCall(id=f"acme_{i}", name=c["tool"], arguments=c["args"])
+            for i, c in enumerate(payload.get("calls", []))
+        ]
+        finish = "stop" if not tool_calls else "tool_calls"
+        return text, tool_calls, finish, {"role": "assistant", "content": text}
+```
+
+Then register your adapter in `get_adapter()` or call it directly from your own module.
 
 ### `mock_tools[].returns_payload`
 
