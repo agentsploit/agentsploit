@@ -40,8 +40,9 @@ jobs:
 
       - name: Smoke-test the built wheel installs cleanly
         run: |
+          # `uv venv` skips pip by default; install with `uv pip` against the venv.
           uv venv /tmp/release-smoke
-          /tmp/release-smoke/bin/pip install dist/*.whl
+          uv pip install --python /tmp/release-smoke/bin/python dist/*.whl
           /tmp/release-smoke/bin/agentsploit version
 
       - name: Publish to PyPI (Trusted Publishing)

@@ -7,12 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.3] - 2026-05-19
+
+Release-workflow patch. v1.6.2's release pipeline failed at the
+post-build smoke-install step (`uv venv` skips pip by default, so
+`/tmp/release-smoke/bin/pip install dist/*.whl` was a missing-command
+error). v1.6.3 fixes the workflow and is the first version that
+actually publishes to PyPI. No code changes vs v1.6.2.
+
+### Fixed
+
+- `release.yml`: smoke-install step now uses `uv pip install --python`
+  instead of bin/pip on the freshly-created venv.
+
 ## [1.6.2] - 2026-05-19
 
-First version to actually land on PyPI. v1.6.1 was tagged but its release
-workflow failed on a Windows-specific test regression discovered when
-the matrix added `windows-latest`. This release fixes that regression
-and verifies the CI matrix passes across all three OSes.
+Tagged but not published. The release workflow failed at the smoke-test
+step; see v1.6.3 for the fix. Code-wise: fixes the Windows CI regressions
+that v1.6.1 surfaced once `windows-latest` joined the matrix.
 
 ### Fixed
 
