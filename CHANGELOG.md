@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-05-19
+
+First version to actually land on PyPI. v1.6.1 was tagged but its release
+workflow failed on a Windows-specific test regression discovered when
+the matrix added `windows-latest`. This release fixes that regression
+and verifies the CI matrix passes across all three OSes.
+
+### Fixed
+
+- **`Authorization.save()` produced a different file on Windows than
+  on POSIX.** Default Windows newline translation rewrote `\n` to
+  `\r\n` between the `safe_dump` call and the on-disk file, so the
+  `source_hash` computed at save-time differed from what `load()`
+  computed at read-time. Now writes with `newline="\n"` and re-hashes
+  from the file bytes, so save/load round-trip is stable on every OS.
+- **`test_load_or_create_token_chmod_600` was failing on Windows**
+  because the token file ended up with `666` permissions (chmod is a
+  no-op on Windows). Now skipped on `win32` with a clear reason; the
+  v1.6.1 `test_cross_platform.py::test_token_creation_logs_warning_on_windows`
+  still verifies the Windows codepath emits its structured warning.
+
 ## [1.6.1] - 2026-05-19
 
 Cross-platform compatibility + ship-readiness patch. No new features; the

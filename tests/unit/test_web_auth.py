@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -22,6 +23,8 @@ def test_load_or_create_token_persists(tmp_path: Path) -> None:
 
 
 def test_load_or_create_token_chmod_600(tmp_path: Path) -> None:
+    if sys.platform == "win32":
+        pytest.skip("POSIX-only: chmod has no effect on Windows ACLs")
     p = tmp_path / "web-token"
     load_or_create_token(p)
     assert oct(p.stat().st_mode)[-3:] == "600"

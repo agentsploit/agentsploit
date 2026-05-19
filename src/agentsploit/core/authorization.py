@@ -55,13 +55,22 @@ class Authorization(BaseModel):
         return auth
 
     def save(self, path: str | Path) -> None:
-        """Write an authorization file to disk."""
+        """Write an authorization file to disk.
+
+        Writes with `newline="\\n"` so the on-disk bytes are stable across
+        operating systems (Windows would otherwise translate `\\n` to
+        `\\r\\n`, producing a different file and a different
+        ``source_hash`` than ``load()`` would compute on read-back).
+        """
         p = Path(path).resolve()
         data = self.model_dump(mode="json")
         text = yaml.safe_dump(data, sort_keys=False, default_flow_style=False)
-        p.write_text(text, encoding="utf-8")
+        with p.open("w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+        # Re-hash from the file bytes so save+load round-trip the same hash on
+        # every OS, even if the local FS rewrote anything.
         self._source_path = p
-        self._source_hash = hashlib.sha256(text.encode()).hexdigest()
+        self._source_hash = hashlib.sha256(p.read_bytes()).hexdigest()
 
     @property
     def source_hash(self) -> str:
