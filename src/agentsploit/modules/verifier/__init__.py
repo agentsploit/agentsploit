@@ -20,11 +20,13 @@ Pipeline:
     Detector (scoped to the sink tool)  →  Finding
 """
 
+from agentsploit.modules.verifier.batch import BatchPathVerifier
 from agentsploit.modules.verifier.synth_config import synth_runner_config
 from agentsploit.modules.verifier.techniques import PathVerifyTechnique
 from agentsploit.modules.verifier.verifier import PathVerifier, VerifierOutcome
 
 __all__ = [
+    "BatchPathVerifier",
     "PathVerifier",
     "PathVerifyTechnique",
     "VerifierOutcome",

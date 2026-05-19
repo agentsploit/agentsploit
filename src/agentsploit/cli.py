@@ -685,5 +685,105 @@ def verify_path(
     raise typer.Exit(code=1 if confirmed else 0)
 
 
+@verify_app.command("all-paths")
+def verify_all_paths(
+    graph_file: Annotated[
+        Path,
+        typer.Option(
+            "--graph",
+            "-g",
+            help="Path to a permission_graph.json produced by `map build`",
+        ),
+    ],
+    agent_config: Annotated[
+        Path | None,
+        typer.Option(
+            "--agent",
+            "-a",
+            help="Agent YAML config (optional — defaults to a mock agent)",
+        ),
+    ] = None,
+    auth: Annotated[Path | None, typer.Option("--auth", help="Authorization YAML")] = None,
+    training: Annotated[
+        bool, typer.Option("--training", help="Use restricted training-mode auth")
+    ] = False,
+    min_privilege: Annotated[
+        str,
+        typer.Option(
+            "--min-privilege",
+            help="Lowest sink privilege to verify: read|internal_action|egress|mutation|execution",
+        ),
+    ] = "egress",
+    max_length: Annotated[int, typer.Option("--max-length", help="Max path length in hops")] = 4,
+    max_paths: Annotated[
+        int | None,
+        typer.Option("--max-paths", help="Cap how many paths to verify (cost control)"),
+    ] = None,
+    parallel: Annotated[int, typer.Option("--parallel", "-p", help="Concurrent verifications")] = 2,
+    out_format: Annotated[str, typer.Option("--format", "-f", help="rich|json|sarif")] = "rich",
+    out_path: Annotated[
+        Path | None, typer.Option("--out", "-o", help="Output file (required for json/sarif)")
+    ] = None,
+) -> None:
+    """Batch-verify every source→sink path in the graph against a single agent."""
+    import json as _json
+
+    from agentsploit.modules.mapper.models import Graph
+    from agentsploit.modules.mapper.models import Privilege as MapperPrivilege
+    from agentsploit.modules.runner.config import RunnerConfig
+    from agentsploit.modules.verifier.batch import BatchPathVerifier
+
+    raw = _json.loads(graph_file.read_text())
+    graph = Graph.model_validate(raw)
+
+    try:
+        priv = MapperPrivilege[min_privilege.upper()]
+    except KeyError as e:
+        raise typer.BadParameter(
+            f"Unknown privilege {min_privilege!r}. Use one of: {[p.label for p in MapperPrivilege]}"
+        ) from e
+
+    base_config: RunnerConfig | None = None
+    if agent_config is not None:
+        try:
+            base_config = RunnerConfig.load(agent_config)
+        except Exception as e:
+            raise typer.BadParameter(f"Failed to load agent config: {e}") from e
+        target_uri = base_config.target_uri()
+    else:
+        target_uri = "agent+mock://mock-1"
+
+    authorization = _load_auth(auth, training, target_uri)
+    target_obj = Target.parse(target_uri)
+    reporter = _resolve_reporter(out_format, out_path)
+
+    batch = BatchPathVerifier(
+        graph=graph,
+        base_config=base_config,
+        max_path_length=max_length,
+        min_sink_privilege=priv,
+        max_paths=max_paths,
+        parallel=parallel,
+    )
+    session = Session(authorization=authorization)
+
+    async def _run() -> None:
+        async for finding in batch.run(target_obj, session):
+            session.add(finding)
+
+    try:
+        asyncio.run(_run())
+    except Exception as e:
+        err_console.print(f"[red]Batch verification failed:[/red] {e}")
+        raise typer.Exit(code=1) from e
+
+    manifest = session.persist()
+    reporter.emit(session)
+    console.print(f"\nSession manifest: [dim]{manifest}[/dim]")
+
+    confirmed = any("path-confirmed" in f.tags for f in session.findings)
+    raise typer.Exit(code=1 if confirmed else 0)
+
+
 if __name__ == "__main__":
     app()

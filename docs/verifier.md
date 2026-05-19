@@ -83,8 +83,47 @@ This makes the mock agent a faithful test fixture for path completion *without* 
 - **Trace artifacts are gold.** Every verify run persists a JSON trace to `engagements/<id>/<sid>/verify-trace-<canary>.json`. Read it when triaging unexpected `PARTIAL` results — it shows exactly what the agent saw and what it did.
 - **Authorization is enforced.** The verifier's target URI is derived from the agent config (`agent+anthropic://<model>` or `agent+mock://mock-1`). Your engagement YAML must allow it.
 
+## Batch verification: `verify all-paths` (v0.6)
+
+When you have a freshly-built permission graph and want to know which mapper hypotheses survive contact with a real agent, run the whole batch in one command:
+
+```bash
+agentsploit verify all-paths \
+  --graph ./engagements/<id>/<sid>/permission_graph.json \
+  --min-privilege egress \
+  --max-paths 20 \
+  --parallel 3 \
+  --training
+```
+
+Behaviour:
+
+- **Dedupes** by `(source, sink)` pair — one verification per endpoint pair, shortest path wins
+- **Parallelises** up to `--parallel` (default 2) — respect LLM rate limits
+- **Caps** with `--max-paths` to bound LLM cost on large graphs
+- **Isolates errors** — one failed verification doesn't kill the batch
+- **Aggregates** — emits one summary finding with confirmed / partial / failed counts and a confirmation-rate percentage
+
+The summary finding is CRITICAL if any path was confirmed, INFO otherwise. Each per-path verification still emits its own finding so you can triage them individually.
+
+Typical workflow:
+
+```bash
+# 1. Build graph
+agentsploit map build --targets ./map-targets.yaml --auth ./auth.yaml
+
+# 2. Triage hypotheses against the mock agent first (free, instant)
+agentsploit verify all-paths --graph ./.../permission_graph.json --training
+
+# 3. Re-run only the CRITICAL confirmations against the real agent
+agentsploit verify path --graph ... --from <src> --to <sink> \
+  --agent ./real.yaml --auth ./auth.yaml
+```
+
+The mock pass is essentially free; use it as a pre-filter before spending tokens on a real model.
+
 ## What the verifier is not
 
-- **Not a fuzzer.** It tests one path per invocation with one technique. To batch-verify every path in a graph, drive it from a shell loop over `find_all_paths()` JSON output — we'll add `verify all-paths` in v0.6.
+- **Not a fuzzer (yet).** Each verification tests one technique against one path. Technique fuzzing across paths is a future direction.
 - **Not a defence assessment.** A FAILED outcome does not mean the agent is safe — only that *this* payload didn't land. Try other techniques (`unicode_tag`, `delimiter`), other system prompts, other models.
 - **Not authorised to act on third-party agents.** Same rules as the rest of AgentSploit — own the target or have written authorization. See [AUTHORIZATION.md](../AUTHORIZATION.md).

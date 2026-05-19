@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-05-18
+
+### Added
+
+- **Batch path verification** — `agentsploit verify all-paths` runs the
+  v0.5 verifier across every source→sink path in a permission graph in
+  one command, with concurrency control, deduplication, and an aggregate
+  summary
+- `verifier.BatchPathVerifier` Module: dedupes paths by `(source, sink)`
+  pair (keeping shortest), parallelises up to `--parallel` runs (default
+  2) via `asyncio.Semaphore`, isolates per-path errors so one failure
+  doesn't kill the batch
+- `--max-paths` cap for cost control on large graphs
+- Aggregate `verifier/batch_summary` finding: confirmed/partial/failed/
+  errored counts + confirmation-rate percentage + top 10 confirmed
+  paths. CRITICAL severity when any path was confirmed.
+- CLI: `agentsploit verify all-paths --graph <file> [--min-privilege X]
+  [--max-paths N] [--parallel N] [--agent <cfg>]`
+
+### Changed
+
+- `docs/verifier.md` extended with the batch workflow + mock-pre-filter
+  pattern (cheap triage before spending real LLM tokens)
+
 ## [0.5.0] - 2026-05-18
 
 ### Added

@@ -118,6 +118,22 @@ agentsploit verify path \
 
 A CONFIRMED finding moves a mapper hypothesis from "plausible attack path" to "proven exploit." See [docs/verifier.md](docs/verifier.md).
 
+### 6. Batch Path Verification (v0.6)
+
+Drive the verifier across every path in a graph in one command — typical workflow is to triage against the cheap mock agent first, then re-run only the confirmations against the real model.
+
+```bash
+# Cheap triage pass (free, instant)
+agentsploit verify all-paths --graph ./.../permission_graph.json --training
+
+# Real-model pass on the same graph
+agentsploit verify all-paths --graph ./.../permission_graph.json \
+  --agent ./agent-anthropic.yaml --auth ./auth.yaml \
+  --parallel 3 --max-paths 20
+```
+
+Deduplicates by `(source, sink)` pair, parallelises with rate-limit-aware concurrency, isolates per-path errors, and emits an aggregate `batch_summary` finding with the confirmation-rate percentage. See [docs/verifier.md](docs/verifier.md#batch-verification-verify-all-paths-v06).
+
 ## Install
 
 Requires Python 3.11+.
