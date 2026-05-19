@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-05-19
+
+### Added
+
+- **Conversation-thread poisoning** (`poisoning.ThreadPoisoner`): the
+  third and most subtle poisoning variant. Where v0.8 attacks a key-
+  value note store and v1.1 attacks a vector index, v1.4 attacks the
+  agent's own conversation history. Attacker controls one turn in a
+  shared thread; victim agent resumes the thread and treats the
+  poisoned turn as trusted context, then invokes a sink tool with the
+  attacker's canary.
+- `poisoning.ConversationThread` and `poisoning.ThreadMessage` Pydantic
+  models; `poisoning.ThreadStore` for thread persistence with append /
+  read counters mirroring v0.8 / v1.1 semantics.
+- `poisoning.ThreadPoison` technique: wraps any v0.7 targeted technique
+  as a fake "previous turn summary" that looks like benign assistant
+  output an operator scrolling the thread would skip past.
+- `RunnerConfig.prepopulated_history: list[dict[str, Any]]` field. When
+  set, adapters prepend these messages to `api_messages` before the
+  trigger turn. Used by the thread poisoner; available to any consumer
+  that needs to resume a conversation.
+- CLI: `agentsploit poison verify-thread --sink-tool <name>
+  [--turns-back N] [--thread-id X] [--sink-arg X] [--sink-privilege X]`
+- Adapter updates: MockAgentAdapter, AnthropicAdapter, and OpenAIAdapter
+  all prepend `prepopulated_history`. Mock additionally scans the
+  history for chain instructions, so thread-poisoning runs work
+  end-to-end without an LLM.
+- `docs/poisoning.md` extended with the conversation-thread section,
+  including the defender-actionable remediation pattern (provenance
+  tagging on history, refuse pre-approval claims, re-prompt on resume).
+- 11 new tests covering thread store semantics + end-to-end mock-agent
+  pipeline (CRITICAL outcome to execution sinks, artifact persistence,
+  turns-back parameterisation).
+
+### Changed
+
+- The three poisoning variants now share an identical outcome contract
+  (`CONFIRMED` / `PARTIAL` / `NOT_RETRIEVED` / `NOT_STORED`), so triage
+  tools treat note-store, RAG, and thread poisoning uniformly.
+
 ## [1.3.0] - 2026-05-19
 
 ### Added

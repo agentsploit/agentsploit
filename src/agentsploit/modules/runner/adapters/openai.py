@@ -78,6 +78,9 @@ class OpenAIAdapter(AgentAdapter):
         api_messages: list[dict[str, Any]] = []
         if config.system_prompt:
             api_messages.append({"role": "system", "content": config.system_prompt})
+        # v1.4: prepend prior conversation history if supplied. The thread
+        # poisoner uses this to resume a poisoned conversation thread.
+        api_messages.extend(config.prepopulated_history)
         api_messages.append({"role": "user", "content": config.trigger_prompt})
 
         use_stream = bool(watcher is not None and config.stream)

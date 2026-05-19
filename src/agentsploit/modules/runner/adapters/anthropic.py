@@ -56,9 +56,14 @@ class AnthropicAdapter(AgentAdapter):
             {"name": t.name, "description": t.description, "input_schema": t.input_schema}
             for t in config.mock_tools
         ]
+        # v1.4: prepend prior conversation history if supplied. The thread
+        # poisoner uses this to resume a poisoned conversation thread.
+        # Anthropic doesn't accept `system` role inside `messages`; strip them
+        # (the system_prompt field carries that role).
         api_messages: list[dict[str, Any]] = [
-            {"role": "user", "content": config.trigger_prompt},
+            m for m in config.prepopulated_history if m.get("role") != "system"
         ]
+        api_messages.append({"role": "user", "content": config.trigger_prompt})
         payload_tool_name = next((t.name for t in config.mock_tools if t.returns_payload), None)
 
         use_stream = bool(watcher is not None and config.stream)

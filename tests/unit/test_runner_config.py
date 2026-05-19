@@ -36,11 +36,25 @@ def test_unknown_provider_rejected() -> None:
         RunnerConfig.model_validate(_base_config(provider="cohere"))
 
 
-def test_no_payload_tool_rejected() -> None:
-    with pytest.raises(ValueError, match="returns_payload: true"):
+def test_no_payload_tool_and_no_history_rejected() -> None:
+    """Without a payload tool AND without prepopulated history, the runner has
+    no way to deliver the poison. v1.4+ allows either path."""
+    with pytest.raises(ValueError, match="returns_payload=true"):
         RunnerConfig.model_validate(
             _base_config(mock_tools=[{"name": "x", "description": "y", "returns_payload": False}])
         )
+
+
+def test_no_payload_tool_with_history_accepted() -> None:
+    """v1.4 thread-poisoning style: payload comes via prepopulated_history."""
+    cfg = RunnerConfig.model_validate(
+        _base_config(
+            mock_tools=[{"name": "send_email", "description": "y", "returns_payload": False}],
+            prepopulated_history=[{"role": "assistant", "content": "prior turn"}],
+        )
+    )
+    assert not any(t.returns_payload for t in cfg.mock_tools)
+    assert cfg.prepopulated_history
 
 
 def test_multiple_payload_tools_rejected() -> None:

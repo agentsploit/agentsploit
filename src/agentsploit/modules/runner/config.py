@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from agentsploit.modules.runner.tools import MockTool, default_document_reader
 
@@ -79,6 +79,13 @@ class RunnerConfig(BaseModel):
     a destructive tool call once exploitability is confirmed. Set False to
     force the v0.3-v1.1 full-response behaviour."""
 
+    prepopulated_history: list[dict[str, Any]] = Field(default_factory=list)
+    """Optional list of prior conversation messages (v1.4+). When set,
+    adapters prepend these to `api_messages` before the system/trigger
+    pair. Used by the thread poisoner to resume a poisoned conversation
+    thread. Each entry is an OpenAI-shaped dict:
+    `{"role": "user"|"assistant"|"system"|"tool", "content": "..."}`."""
+
     detection: CanaryDetectionConfig = Field(default_factory=CanaryDetectionConfig)
 
     @field_validator("provider")
@@ -91,18 +98,28 @@ class RunnerConfig(BaseModel):
 
     @field_validator("mock_tools")
     @classmethod
-    def _exactly_one_payload_tool(cls, v: list[MockTool]) -> list[MockTool]:
+    def _at_most_one_payload_tool(cls, v: list[MockTool]) -> list[MockTool]:
         payload_tools = [t for t in v if t.returns_payload]
-        if len(payload_tools) == 0:
-            raise ValueError(
-                "At least one mock_tool must have `returns_payload: true` - "
-                "that's the tool the agent calls to receive the injection."
-            )
         if len(payload_tools) > 1:
             raise ValueError(
                 f"Only one mock_tool may have `returns_payload: true`; got {len(payload_tools)}."
             )
         return v
+
+    @model_validator(mode="after")
+    def _payload_or_history(self) -> RunnerConfig:
+        """Either a payload-returning tool or prepopulated history must supply
+        the poison. v0.3-v1.1 always used the former; v1.4 thread poisoning
+        introduced the latter."""
+        has_payload_tool = any(t.returns_payload for t in self.mock_tools)
+        has_history = bool(self.prepopulated_history)
+        if not has_payload_tool and not has_history:
+            raise ValueError(
+                "RunnerConfig needs either a mock_tool with returns_payload=true "
+                "(v0.3-v1.1 style) or a non-empty prepopulated_history (v1.4 "
+                "thread-poisoning style)."
+            )
+        return self
 
     @classmethod
     def load(cls, path: str | Path) -> RunnerConfig:

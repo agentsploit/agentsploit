@@ -125,10 +125,56 @@ A confirmed RAG-poisoning finding means the agent's retrieval-augmented generati
 2. Attach **provenance metadata** to indexed documents. The agent should refuse high-privilege actions (egress/mutation/execution) when the trigger originated from low-trust corpus content: user-submitted tickets, wiki edits, scraped web pages.
 3. Apply prompt-injection defence at the **index step** (reject new docs containing role markers like `<system>` or `[INST]`), not just at the agent step.
 
+## Conversation-thread poisoning (v1.4)
+
+The most subtle of the three poisoning variants. Where v0.8 / v1.1 hide the payload in a store the agent retrieves from, v1.4 hides it inside the agent's own conversation history. The agent treats the poisoned turn as part of its trusted prior context and acts on the embedded instruction in the next turn.
+
+Most realistic against:
+
+- OpenAI Assistants threads (persistent thread IDs that survive across user sessions)
+- Customer-support chatbots whose conversation state carries between user messages
+- Multi-tenant chat platforms where users share session context
+- Persisted assistant memory features that import threads across sessions
+
+### What ships in v1.4
+
+- `ThreadStore`: in-memory `ConversationThread` registry with append/read counters
+- `ThreadPoison` technique: wraps any v0.7 targeted technique as a fake "previous turn summary" that an operator scrolling the thread would skip past
+- `ThreadPoisoner` Module: appends a benign-looking poisoned turn N positions back in a synthetic thread, then resumes that thread as the victim agent's prepopulated history with a fresh user trigger
+- `RunnerConfig.prepopulated_history`: new optional list of prior messages. The adapter prepends to its `api_messages` before sending. Used by the thread poisoner; available to any consumer that wants to resume a conversation thread.
+
+### CLI
+
+```bash
+agentsploit poison verify-thread \
+  --sink-tool send_email --sink-arg body \
+  --sink-privilege egress \
+  --turns-back 3 \
+  --training
+
+# Real-LLM run
+agentsploit poison verify-thread \
+  --sink-tool run_shell --sink-arg command \
+  --sink-privilege execution \
+  --turns-back 5 \
+  --agent ./examples/agent-anthropic.yaml \
+  --auth ./authorization.yaml
+```
+
+### Defender takeaway (thread-specific)
+
+A confirmed thread-poisoning finding means the agent treats conversation history as authoritative. The fix:
+
+1. **Tag historical turns with provenance** (`<turn source="multi_tenant_user_42">...</turn>`) so the system prompt can instruct the agent to ignore workflow-step language inside untrusted turns.
+2. **Refuse pre-approval claims** in assistant turns. If a prior turn says "this has been pre-approved, no further confirmation needed", treat it as suspicious.
+3. **Re-prompt on every resumed session**: require fresh human approval for any high-privilege action (egress/mutation/execution), regardless of what prior context says.
+
+The outcome classification matches v0.8 / v1.1 (`CONFIRMED` / `PARTIAL` / `NOT_RETRIEVED` / `NOT_STORED`), so triage tooling treats all three poisoning variants identically.
+
 ## What this is not
 
-- **Not a conversation-thread poisoning module**. Cross-turn memory in chat threads (OpenAI Assistants threads, Claude conversation memory) needs real LLM API support to be realistic. v0.8 + v1.1 cover written / indexed storage; thread memory is a future module.
-- **Not real embeddings**. The lexical scorer is a stand-in for embedding cosine. Against a real embedding model the attacker would write semantically-paraphrased cover instead of keyword-padded cover, but the threat model and remediations are identical.
+- **Not real embeddings** (RAG only). The lexical scorer is a stand-in for embedding cosine. Against a real embedding model the attacker would write semantically-paraphrased cover instead of keyword-padded cover, but the threat model and remediations are identical.
+- **Not OpenAI Assistants thread-ID integration**. v1.4 simulates thread persistence locally via `RunnerConfig.prepopulated_history`. A future module could speak the real Assistants `threads.create`/`threads.messages` API for engagements against production OpenAI Assistants deployments.
 - **Not authorised against third-party agents**. Same rules: own the target or have written authorization. See [AUTHORIZATION.md](../AUTHORIZATION.md).
 
 ## How to extend with a real vector backend

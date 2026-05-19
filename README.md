@@ -213,6 +213,20 @@ agentsploit poison verify-rag \
 
 The retrieval-failure vs obedience-failure split is the key actionable distinction the RAG variant adds. See [docs/poisoning.md#rag--vector-store-poisoning-v11](docs/poisoning.md#rag--vector-store-poisoning-v11).
 
+### 10. Conversation-Thread Poisoning (v1.4)
+
+The third and most subtle poisoning variant. The attacker writes a benign-looking turn into a shared conversation thread; the victim agent resumes the thread later and treats the poisoned turn as part of its own trusted prior context. Defences that filter retrieved content don't catch this - the poison sits in the agent's history, not in retrieved data.
+
+```bash
+agentsploit poison verify-thread \
+  --sink-tool send_email --sink-arg body \
+  --sink-privilege egress \
+  --turns-back 3 \
+  --training
+```
+
+Realistic against OpenAI Assistants threads, customer-support chatbots with multi-message state, and multi-tenant chat platforms where users share session context. See [docs/poisoning.md#conversation-thread-poisoning-v14](docs/poisoning.md#conversation-thread-poisoning-v14).
+
 ## Install
 
 Requires Python 3.11+.

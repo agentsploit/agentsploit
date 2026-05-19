@@ -1166,5 +1166,112 @@ def poison_verify_rag(
     raise typer.Exit(code=1 if confirmed else 0)
 
 
+@poison_app.command("verify-thread")
+def poison_verify_thread(
+    sink_tool: Annotated[
+        str,
+        typer.Option(
+            "--sink-tool",
+            help="Name of the sink tool the poisoned thread turn should steer the victim toward",
+        ),
+    ],
+    sink_arg: Annotated[
+        str, typer.Option("--sink-arg", help="Sink argument that should hold the canary")
+    ] = "body",
+    sink_privilege: Annotated[
+        str,
+        typer.Option(
+            "--sink-privilege",
+            help="Label used in finding remediation (egress|mutation|execution|...)",
+        ),
+    ] = "egress",
+    turns_back: Annotated[
+        int,
+        typer.Option(
+            "--turns-back",
+            help="How many turns back in the thread the poison sits (default 2)",
+        ),
+    ] = 2,
+    thread_id: Annotated[
+        str | None,
+        typer.Option("--thread-id", help="Override the synthetic thread id"),
+    ] = None,
+    agent_config: Annotated[
+        Path | None,
+        typer.Option("--agent", "-a", help="Agent YAML config (defaults to mock)"),
+    ] = None,
+    auth: Annotated[Path | None, typer.Option("--auth", help="Authorization YAML")] = None,
+    training: Annotated[
+        bool, typer.Option("--training", help="Use restricted training-mode auth")
+    ] = False,
+    technique: Annotated[
+        str,
+        typer.Option(
+            "--technique",
+            help="Injection envelope: role_confusion|direct|delimiter|unicode_tag|tool_smuggling",
+        ),
+    ] = "role_confusion",
+    canary: Annotated[
+        str | None, typer.Option("--canary", help="Override canary (default: random)")
+    ] = None,
+    out_format: Annotated[str, typer.Option("--format", "-f", help="rich|json|sarif")] = "rich",
+    out_path: Annotated[
+        Path | None, typer.Option("--out", "-o", help="Output file (required for json/sarif)")
+    ] = None,
+) -> None:
+    """Conversation-thread poisoning: inject a fake assistant turn into a
+    shared thread, force the victim agent to resume from it, confirm the
+    embedded chain instruction fires."""
+    from agentsploit.modules.poisoning.thread import ThreadPoisoner
+    from agentsploit.modules.runner.config import RunnerConfig
+
+    base_config: RunnerConfig | None = None
+    if agent_config is not None:
+        try:
+            base_config = RunnerConfig.load(agent_config)
+        except Exception as e:
+            raise typer.BadParameter(f"Failed to load agent config: {e}") from e
+        target_uri = base_config.target_uri()
+    else:
+        target_uri = "agent+mock://mock-1"
+
+    authorization = _load_auth(auth, training, target_uri)
+    target_obj = Target.parse(target_uri)
+    reporter = _resolve_reporter(out_format, out_path)
+
+    try:
+        poisoner = ThreadPoisoner(
+            sink_tool_name=sink_tool,
+            sink_arg_name=sink_arg,
+            sink_privilege_label=sink_privilege,
+            base_config=base_config,
+            technique=technique,
+            thread_id=thread_id,
+            turns_back=turns_back,
+            canary=canary,
+        )
+    except ValueError as e:
+        raise typer.BadParameter(str(e)) from e
+
+    session = Session(authorization=authorization)
+
+    async def _run() -> None:
+        async for finding in poisoner.run(target_obj, session):
+            session.add(finding)
+
+    try:
+        asyncio.run(_run())
+    except Exception as e:
+        err_console.print(f"[red]Thread poison verification failed:[/red] {e}")
+        raise typer.Exit(code=1) from e
+
+    manifest = session.persist()
+    reporter.emit(session)
+    console.print(f"\nSession manifest: [dim]{manifest}[/dim]")
+
+    confirmed = any("poison-confirmed" in f.tags for f in session.findings)
+    raise typer.Exit(code=1 if confirmed else 0)
+
+
 if __name__ == "__main__":
     app()
