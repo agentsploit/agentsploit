@@ -51,11 +51,16 @@ verify_app = typer.Typer(
     help="Verify a mapper-inferred path by driving it through a live agent.",
     no_args_is_help=True,
 )
+poison_app = typer.Typer(
+    help="Multi-phase memory-poisoning attacks against agents with shared storage.",
+    no_args_is_help=True,
+)
 app.add_typer(scan_app, name="scan")
 app.add_typer(generate_app, name="generate")
 app.add_typer(run_app, name="run")
 app.add_typer(map_app, name="map")
 app.add_typer(verify_app, name="verify")
+app.add_typer(poison_app, name="poison")
 
 console = Console()
 err_console = Console(stderr=True)
@@ -896,6 +901,107 @@ def verify_fuzz_path(
     console.print(f"\nSession manifest: [dim]{manifest}[/dim]")
 
     confirmed = any("path-confirmed" in f.tags for f in session.findings)
+    raise typer.Exit(code=1 if confirmed else 0)
+
+
+# --------------------------------------------------------------------------- poison
+
+
+@poison_app.command("verify")
+def poison_verify(
+    sink_tool: Annotated[
+        str,
+        typer.Option(
+            "--sink-tool",
+            help="Name of the sink tool the poisoned note should steer the victim toward",
+        ),
+    ],
+    sink_arg: Annotated[
+        str, typer.Option("--sink-arg", help="Sink argument that should hold the canary")
+    ] = "body",
+    sink_privilege: Annotated[
+        str,
+        typer.Option(
+            "--sink-privilege",
+            help="Label used in the finding remediation (egress|mutation|execution|...)",
+        ),
+    ] = "egress",
+    agent_config: Annotated[
+        Path | None,
+        typer.Option("--agent", "-a", help="Agent YAML config (defaults to mock)"),
+    ] = None,
+    auth: Annotated[Path | None, typer.Option("--auth", help="Authorization YAML")] = None,
+    training: Annotated[
+        bool, typer.Option("--training", help="Use restricted training-mode auth")
+    ] = False,
+    technique: Annotated[
+        str,
+        typer.Option(
+            "--technique",
+            help="Injection envelope: role_confusion|direct|delimiter|unicode_tag|tool_smuggling",
+        ),
+    ] = "role_confusion",
+    store_key: Annotated[
+        str | None,
+        typer.Option("--store-key", help="Key under which the poisoned note is stored"),
+    ] = None,
+    canary: Annotated[
+        str | None, typer.Option("--canary", help="Override canary (default: random)")
+    ] = None,
+    out_format: Annotated[str, typer.Option("--format", "-f", help="rich|json|sarif")] = "rich",
+    out_path: Annotated[
+        Path | None, typer.Option("--out", "-o", help="Output file (required for json/sarif)")
+    ] = None,
+) -> None:
+    """Two-phase memory poisoning: attacker writes a crafted note, victim reads it
+    and is steered into invoking the sink with the canary."""
+    from agentsploit.modules.poisoning.poisoner import MemoryPoisoner
+    from agentsploit.modules.runner.config import RunnerConfig
+
+    base_config: RunnerConfig | None = None
+    if agent_config is not None:
+        try:
+            base_config = RunnerConfig.load(agent_config)
+        except Exception as e:
+            raise typer.BadParameter(f"Failed to load agent config: {e}") from e
+        target_uri = base_config.target_uri()
+    else:
+        target_uri = "agent+mock://mock-1"
+
+    authorization = _load_auth(auth, training, target_uri)
+    target_obj = Target.parse(target_uri)
+    reporter = _resolve_reporter(out_format, out_path)
+
+    try:
+        poisoner = MemoryPoisoner(
+            sink_tool_name=sink_tool,
+            sink_arg_name=sink_arg,
+            sink_privilege_label=sink_privilege,
+            base_config=base_config,
+            technique=technique,
+            store_key=store_key,
+            canary=canary,
+        )
+    except ValueError as e:
+        raise typer.BadParameter(str(e)) from e
+
+    session = Session(authorization=authorization)
+
+    async def _run() -> None:
+        async for finding in poisoner.run(target_obj, session):
+            session.add(finding)
+
+    try:
+        asyncio.run(_run())
+    except Exception as e:
+        err_console.print(f"[red]Poison verification failed:[/red] {e}")
+        raise typer.Exit(code=1) from e
+
+    manifest = session.persist()
+    reporter.emit(session)
+    console.print(f"\nSession manifest: [dim]{manifest}[/dim]")
+
+    confirmed = any("poison-confirmed" in f.tags for f in session.findings)
     raise typer.Exit(code=1 if confirmed else 0)
 
 

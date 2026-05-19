@@ -54,12 +54,15 @@ class MockAgentAdapter(AgentAdapter):
             trace.finished_at = datetime.now(UTC)
             return trace
 
-        # Turn 1: agent invokes the payload-bearing tool
-        call = ToolCall(
-            id="call_001", name=payload_tool.name, arguments={"name": "compliance-review.pdf"}
+        # Turn 1: agent invokes the payload-bearing tool with realistic args
+        call_args = (
+            dict(payload_tool.default_args)
+            if payload_tool.default_args is not None
+            else _default_args_for(payload_tool.input_schema)
         )
+        call = ToolCall(id="call_001", name=payload_tool.name, arguments=call_args)
         trace.add_assistant(tool_calls=[call])
-        tool_output = payload_tool.render_response(payload)
+        tool_output = payload_tool.render_response(payload, call_args)
         trace.add_tool_result(call.id, tool_output)
 
         decoded = _decode_tag_blocks(tool_output)
@@ -73,7 +76,9 @@ class MockAgentAdapter(AgentAdapter):
             )
             # Simulate the tool's response
             matched = next((t for t in config.mock_tools if t.name == chain_call.name), None)
-            tool_result = matched.render_response(payload) if matched else "[mock] ok"
+            tool_result = (
+                matched.render_response(payload, chain_call.arguments) if matched else "[mock] ok"
+            )
             trace.add_tool_result(chain_call.id, tool_result)
             trace.add_assistant(text="Workflow complete.")
             trace.finished_at = datetime.now(UTC)
@@ -95,6 +100,30 @@ class MockAgentAdapter(AgentAdapter):
 
 
 # --------------------------------------------------------------------- helpers
+
+
+def _default_args_for(schema: dict[str, Any]) -> dict[str, str]:
+    """Build a plausible default arg-dict for a tool's input schema.
+
+    Used by the mock adapter when synthesising the agent's first tool call
+    (which we hardcode rather than letting the agent decide). Picks the first
+    required string arg and fills it with 'compliance-review.pdf'.
+    """
+    if not isinstance(schema, dict):
+        return {"name": "compliance-review.pdf"}
+    props = schema.get("properties", {})
+    required = schema.get("required", [])
+    if not isinstance(props, dict):
+        return {"name": "compliance-review.pdf"}
+    candidates: list[str] = list(required) if isinstance(required, list) else []
+    for k in props:
+        if k not in candidates:
+            candidates.append(k)
+    for k in candidates:
+        spec = props.get(k, {})
+        if isinstance(spec, dict) and spec.get("type") == "string":
+            return {k: "compliance-review.pdf"}
+    return {"name": "compliance-review.pdf"}
 
 
 def _decode_tag_blocks(text: str) -> str:

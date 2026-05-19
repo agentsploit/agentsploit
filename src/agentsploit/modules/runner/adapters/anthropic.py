@@ -100,7 +100,7 @@ class AnthropicAdapter(AgentAdapter):
 
                     matched = next((t for t in config.mock_tools if t.name == tc.name), None)
                     tool_output = (
-                        matched.render_response(payload)
+                        matched.render_response(payload, tc.arguments)
                         if matched
                         else f"[runner] tool {tc.name!r} not registered"
                     )

@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-18
+
+### Added
+
+- **Memory poisoning** — the first multi-phase attack module. Attacker
+  controls shared storage in phase 1; victim agent retrieves the
+  poisoned content in a separate phase 2 run and is steered into a
+  sink-tool call carrying the canary.
+- `poisoning.MemoryStore` ABC + `InMemoryNoteStore` impl with
+  write/read counters for evidence
+- `poisoning.build_save_note_tool` / `build_read_note_tool` factories —
+  store-backed MockTool variants that mutate the shared store via the
+  new on_call hook
+- `poisoning.StoredNotePoison` — wraps any v0.7 targeted technique in
+  note-flavoured cover text so retrieved content looks plausible
+- `poisoning.MemoryPoisoner` Module — owns the store, simulates the
+  attacker write directly (the half not under test), runs the victim
+  agent for real, scopes detection to the sink tool, emits one of:
+    `CONFIRMED`       — victim called sink with canary (severity tied
+                        to sink privilege)
+    `PARTIAL`         — note retrieved but canary didn't surface in sink
+    `NOT_RETRIEVED`   — note stored but victim never read it
+    `NOT_STORED`      — attacker write failed (setup issue)
+- CLI: `agentsploit poison verify --sink-tool <name> [--sink-arg X]
+  [--sink-privilege X] [--technique X] [--store-key X]`
+- `MockTool.on_call` callback hook — lets a single tool's response
+  depend on its tool-call arguments. Both runner adapters now thread
+  arguments through `render_response`.
+- `docs/poisoning.md` covering the threat model, outcomes,
+  defender-actionable remediation pattern, and the v0.9 RAG extension path
+
+### Changed
+
+- README sectioned with poisoning as v0.8 capability
+- `MockTool.render_response(payload)` → `render_response(payload, arguments=None)`
+  to support arg-aware behaviour. Existing callers still work since
+  `arguments` is optional.
+
 ## [0.7.0] - 2026-05-18
 
 ### Added
