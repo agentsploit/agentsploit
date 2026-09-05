@@ -52,6 +52,9 @@ authorization-*.yaml
 # Cached SARIF schema (refetched on first test run)
 tests/.sarif_schema_cache.json
 
+# Launch/marketing drafts & assets (internal, not part of the shipped repo)
+launch/
+
 # Frontend dev artefacts (the built bundle IS checked in so installs work
 # without a Node toolchain; only dev/intermediate files are excluded)
 ui/node_modules/

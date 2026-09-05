@@ -1,0 +1,70 @@
+# MCP servers to survey. Each entry is either a clonable `repo` or a local
+# `path`. Only PUBLIC source is read; nothing here is executed or connected to.
+#
+# Fields:
+#   name    - short id (used for manifest/finding filenames)
+#   repo    - git URL to shallow-clone   (omit if using `path`)
+#   path    - local checkout to read instead of cloning (relative to this file)
+#   ref     - optional branch/tag
+#   subdir  - optional subpath to restrict extraction (e.g. a monorepo package)
+#
+# The list below is Python MCP servers, verified via the GitHub API on
+# 2026-09-05 (exists, not archived, primary language Python). Star counts are
+# noted so you can frame the survey as "top Python MCP servers by stars".
+# HAND-REVIEW manifests/ after `collect` before trusting counts — the static
+# extractor undercounts (Pydantic schemas / cross-file enums / non-Python).
+
+servers:
+  # --- control: bundled vulnerable fixture. REMOVE before publishing counts. ---
+  - name: _fixture_vulnerable
+    path: ../../tests/fixtures/vulnerable_mcp
+
+  # --- reference servers monorepo: Python servers git/fetch/time live here ---
+  - name: modelcontextprotocol-servers            # 90k★ repo (Python subset)
+    repo: https://github.com/modelcontextprotocol/servers.git
+
+  # --- standalone / vendor Python MCP servers, by stars ---
+  - name: serena                                  # 28.9k★
+    repo: https://github.com/oraios/serena.git
+
+  - name: awslabs-mcp                             # 9.7k★ (monorepo, many servers)
+    repo: https://github.com/awslabs/mcp.git
+
+  - name: mcp-atlassian                           # 5.9k★
+    repo: https://github.com/sooperset/mcp-atlassian.git
+
+  - name: mcp-server-qdrant                       # 1.5k★
+    repo: https://github.com/qdrant/mcp-server-qdrant.git
+
+  - name: mcp-neo4j                               # 980★ (monorepo, several servers)
+    repo: https://github.com/neo4j-contrib/mcp-neo4j.git
+
+  - name: mcp-clickhouse                          # 866★
+    repo: https://github.com/ClickHouse/mcp-clickhouse.git
+
+  - name: mcp-redis                               # 615★
+    repo: https://github.com/redis/mcp-redis.git
+
+  - name: chroma-mcp                              # 590★
+    repo: https://github.com/chroma-core/chroma-mcp.git
+
+  - name: kagimcp                                 # 507★
+    repo: https://github.com/kagisearch/kagimcp.git
+
+  - name: snowflake-labs-mcp                      # 297★
+    repo: https://github.com/Snowflake-Labs/mcp.git
+
+  - name: mcp-server-milvus                       # 243★
+    repo: https://github.com/zilliztech/mcp-server-milvus.git
+
+  - name: markitdown-mcp                          # 178k★ repo; MCP server subpackage
+    repo: https://github.com/microsoft/markitdown.git
+    subdir: packages/markitdown-mcp
+
+  # Excluded after API check (kept here so you don't re-chase them):
+  #   modelcontextprotocol/python-sdk  - SDK, not a deployed server
+  #   modelcontextprotocol/servers-archived, tinybirdco/mcp-tinybird,
+  #   browserbase/mcp-server-browserbase, e2b-dev/mcp-server  - archived
+  #   elastic/mcp-server-elasticsearch (Rust), grafana/mcp-grafana (Go),
+  #   supabase/mcp, mongodb-js/mongodb-mcp-server, getsentry/sentry-mcp,
+  #   confluentinc/mcp-confluent, pinecone-io/pinecone-mcp  - TypeScript
