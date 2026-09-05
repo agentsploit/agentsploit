@@ -31,6 +31,14 @@ _POISON_PATTERNS: list[tuple[str, str]] = [
 _TAG_BLOCK = re.compile(r"[\U000E0020-\U000E007F]")  # Unicode tag range smuggling
 
 
+def find_poison_patterns(text: str) -> list[str]:
+    """Return the prompt-injection pattern labels present in text."""
+    hits = [label for pattern, label in _POISON_PATTERNS if re.search(pattern, text)]
+    if _TAG_BLOCK.search(text):
+        hits.append("unicode-tag-block")
+    return hits
+
+
 class ToolPoisoningCheck(Check):
     NAME: ClassVar[str] = "tool_poisoning"
     DEFAULT_SEVERITY: ClassVar[Severity] = Severity.HIGH
@@ -44,13 +52,7 @@ class ToolPoisoningCheck(Check):
             name = tool.get("name", "<unnamed>")
             description = str(tool.get("description", ""))
 
-            hits: list[str] = []
-            for pattern, label in _POISON_PATTERNS:
-                if re.search(pattern, description):
-                    hits.append(label)
-
-            if _TAG_BLOCK.search(description):
-                hits.append("unicode-tag-block")
+            hits = find_poison_patterns(description)
 
             if hits:
                 yield CheckResult(

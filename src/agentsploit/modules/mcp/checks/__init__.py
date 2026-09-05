@@ -6,6 +6,7 @@ from agentsploit.modules.mcp.checks.http_cors import HTTPCORSProbe
 from agentsploit.modules.mcp.checks.http_info_disclosure import HTTPInfoDisclosureProbe
 from agentsploit.modules.mcp.checks.http_tls_required import HTTPTLSRequiredProbe
 from agentsploit.modules.mcp.checks.prompt_disclosure import PromptDisclosureCheck
+from agentsploit.modules.mcp.checks.prompt_poisoning import PromptPoisoningCheck
 from agentsploit.modules.mcp.checks.tool_poisoning import ToolPoisoningCheck
 from agentsploit.modules.mcp.checks.tool_shadowing import ToolShadowingCheck
 from agentsploit.modules.mcp.checks.unsafe_tool_args import UnsafeToolArgsCheck
@@ -14,6 +15,7 @@ ALL_CHECKS: list[type[Check]] = [
     ToolPoisoningCheck,
     ToolShadowingCheck,
     PromptDisclosureCheck,
+    PromptPoisoningCheck,
     UnsafeToolArgsCheck,
 ]
 
@@ -35,6 +37,7 @@ __all__ = [
     "HTTPTLSRequiredProbe",
     "Probe",
     "PromptDisclosureCheck",
+    "PromptPoisoningCheck",
     "ToolPoisoningCheck",
     "ToolShadowingCheck",
     "UnsafeToolArgsCheck",

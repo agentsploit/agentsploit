@@ -60,6 +60,7 @@ Connects to an MCP server over **stdio**, **Streamable HTTP**, or **SSE** and ru
 | `tool_poisoning` | Tool descriptions containing prompt-injection payloads aimed at the host agent |
 | `tool_shadowing` | Name collisions / shadowing with well-known tools (e.g. `read_file`, `send_email`) |
 | `prompt_disclosure` | Tools whose descriptions leak internal system prompts, secrets, or paths |
+| `prompt_poisoning` | MCP prompt templates containing instructions aimed at hijacking the host agent |
 | `unsafe_tool_args` | Tool schemas that accept dangerous unconstrained arguments (paths, URLs, shell commands) |
 
 **HTTP probes (HTTP/SSE only):**

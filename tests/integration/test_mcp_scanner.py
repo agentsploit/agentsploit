@@ -28,9 +28,11 @@ async def test_scanner_against_vulnerable_fixture(
     assert "tool_poisoning" in checks_fired, "expected tool_poisoning on read_secret_file"
     assert "tool_shadowing" in checks_fired, "expected tool_shadowing on read_file"
     assert "prompt_disclosure" in checks_fired, "expected prompt_disclosure on AWS key"
+    assert "prompt_poisoning" in checks_fired, "expected prompt_poisoning on poisoned_summary"
     assert "unsafe_tool_args" in checks_fired, "expected unsafe_tool_args on run_command.command"
 
     # safe_add should NOT generate findings, but should appear in inventory
     inventory_findings = [f for f in session.findings if f.check == "mcp/inventory"]
     assert len(inventory_findings) == 1
     assert "4 tools" in inventory_findings[0].title
+    assert "1 prompts" in inventory_findings[0].title
