@@ -48,6 +48,7 @@ agentsploit scan mcp sse://stream.example.com/sse --auth ./auth.yaml
 | `tool_poisoning` | yes | yes | yes |
 | `tool_shadowing` | yes | yes | yes |
 | `prompt_disclosure` | yes | yes | yes |
+| `prompt_poisoning` | yes | yes | yes |
 | `unsafe_tool_args` | yes | yes | yes |
 | `http_tls_required` | - | yes | yes |
 | `http_info_disclosure` | - | yes | yes |

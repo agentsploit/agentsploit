@@ -189,6 +189,20 @@ async def inventory(target: Target, credentials: Credentials | None = None) -> M
             try:
                 pr_resp = await session.list_prompts()
                 inv.prompts = [p.model_dump() for p in pr_resp.prompts]
+                for prompt, prompt_data in zip(pr_resp.prompts, inv.prompts, strict=True):
+                    required_args = [arg.name for arg in (prompt.arguments or []) if arg.required]
+                    if required_args:
+                        prompt_data["unresolved_required_arguments"] = required_args
+                        continue
+                    try:
+                        rendered = await session.get_prompt(prompt.name)
+                        prompt_data["rendered_messages"] = [
+                            message.model_dump() for message in rendered.messages
+                        ]
+                    except Exception:
+                        # Prompt metadata remains useful when a server advertises a
+                        # template but refuses to render it without arguments.
+                        pass
             except Exception:
                 pass
     except Exception as e:
