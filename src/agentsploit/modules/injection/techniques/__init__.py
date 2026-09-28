@@ -3,8 +3,15 @@
 from agentsploit.modules.injection.techniques.base import InjectionContext, Technique
 from agentsploit.modules.injection.techniques.delimiter import DelimiterTechnique
 from agentsploit.modules.injection.techniques.direct import DirectTechnique
-from agentsploit.modules.injection.techniques.role_confusion import RoleConfusionTechnique
-from agentsploit.modules.injection.techniques.tool_smuggling import ToolSmugglingTechnique
+from agentsploit.modules.injection.techniques.payload_splitting import (
+    PayloadSplittingTechnique,
+)
+from agentsploit.modules.injection.techniques.role_confusion import (
+    RoleConfusionTechnique,
+)
+from agentsploit.modules.injection.techniques.tool_smuggling import (
+    ToolSmugglingTechnique,
+)
 from agentsploit.modules.injection.techniques.unicode_tag import UnicodeTagTechnique
 
 ALL_TECHNIQUES: dict[str, type[Technique]] = {
@@ -13,6 +20,7 @@ ALL_TECHNIQUES: dict[str, type[Technique]] = {
     "delimiter": DelimiterTechnique,
     "unicode_tag": UnicodeTagTechnique,
     "tool_smuggling": ToolSmugglingTechnique,
+    "payload_splitting": PayloadSplittingTechnique,
 }
 
 __all__ = [
@@ -20,6 +28,7 @@ __all__ = [
     "DelimiterTechnique",
     "DirectTechnique",
     "InjectionContext",
+    "PayloadSplittingTechnique",
     "RoleConfusionTechnique",
     "Technique",
     "ToolSmugglingTechnique",
